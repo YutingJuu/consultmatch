@@ -224,3 +224,207 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 13px; color: #475569; transition: all .15s;
 }
 .reset-btn:hover { border-color: #94a3b8; color: #1e293b; }
+
+/* ── Landing screen ────────────────────────────────────────── */
+.landing-card { max-width: 500px; }
+.landing-desc { font-size: 14px; color: #64748b; margin-bottom: 28px; line-height: 1.6; }
+.landing-roles { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.landing-role-btn {
+  display: flex; align-items: center; gap: 16px; padding: 18px 20px;
+  border: 2px solid #e2e8f0; border-radius: 12px; background: white;
+  cursor: pointer; text-align: left; transition: all .15s;
+}
+.landing-role-btn:hover { border-color: #3b82f6; background: #f8faff; }
+.role-icon { font-size: 28px; flex-shrink: 0; }
+.role-title { display: block; font-size: 16px; font-weight: 700; color: #1e293b; }
+.role-sub { display: block; font-size: 13px; color: #64748b; margin-top: 2px; }
+
+/* ── Choice cards ──────────────────────────────────────────── */
+.choice-cards { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+.choice-card {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 20px; border: 2px solid #e2e8f0; border-radius: 12px;
+  background: white; cursor: pointer; text-align: left; transition: all .15s;
+}
+.choice-card:hover { border-color: #3b82f6; background: #f8faff; }
+.choice-card.primary { border-color: #3b82f6; background: #eff6ff; }
+.choice-icon { font-size: 24px; margin-bottom: 8px; }
+.choice-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+.choice-sub { font-size: 13px; color: #64748b; line-height: 1.5; }
+.back-btn {
+  background: none; border: none; color: #64748b; cursor: pointer;
+  font-size: 13px; padding: 0; margin-bottom: 16px; display: block;
+}
+.back-btn:hover { color: #1e293b; }
+
+/* ── Profile preview in login ──────────────────────────────── */
+.profile-preview {
+  background: #f8fafc; border-radius: 10px; padding: 14px 16px;
+  margin: 12px 0; border: 1px solid #e2e8f0;
+}
+.preview-row { display: flex; justify-content: space-between;
+  font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+.preview-row:last-of-type { border-bottom: none; }
+.preview-row span { color: #64748b; }
+.preview-skills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+
+/* ── Wizard ────────────────────────────────────────────────── */
+.wizard-card {
+  background: white; border-radius: 16px; width: 560px; max-width: 96vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+  max-height: 92vh; overflow: hidden;
+}
+.wizard-header {
+  padding: 20px 24px 12px; border-bottom: 1px solid #f1f5f9;
+}
+.wizard-steps { display: flex; gap: 0; margin-top: 12px; }
+.wizard-step {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  position: relative;
+}
+.wizard-step::after {
+  content: ""; position: absolute; top: 12px; left: 50%; width: 100%;
+  height: 2px; background: #e2e8f0; z-index: 0;
+}
+.wizard-step:last-child::after { display: none; }
+.step-dot {
+  width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0;
+  color: #94a3b8; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+}
+.wizard-step.active .step-dot { background: #3b82f6; color: white; }
+.wizard-step.done .step-dot { background: #16a34a; color: white; }
+.step-label { font-size: 10px; color: #94a3b8; }
+.wizard-step.active .step-label { color: #3b82f6; font-weight: 600; }
+.wizard-progress-bg { height: 3px; background: #f1f5f9; }
+.wizard-progress-fill { height: 100%; background: #3b82f6; transition: width .3s ease; }
+.wizard-body { flex: 1; overflow-y: auto; padding: 24px; }
+.wizard-step-content h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.step-hint { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+.wizard-footer {
+  padding: 16px 24px; border-top: 1px solid #f1f5f9;
+  display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+}
+.wizard-next-btn {
+  padding: 13px; background: #1e293b; color: white; border: none;
+  border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background .15s;
+}
+.wizard-next-btn:hover { background: #334155; }
+.wizard-next-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+.wizard-next-btn.complete { background: #16a34a; }
+.wizard-next-btn.complete:hover { background: #15803d; }
+.skip-note { font-size: 12px; color: #94a3b8; text-align: center; }
+
+/* ── Form fields in wizard ─────────────────────────────────── */
+.form-field { margin-bottom: 20px; }
+.form-field label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: #475569; margin-bottom: 8px;
+}
+.field-note { font-weight: 400; color: #94a3b8; }
+.form-field input[type="text"],
+.form-field input[type="date"] {
+  width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0;
+  border-radius: 8px; font-size: 14px; color: #1e293b;
+}
+.form-field input:focus { outline: none; border-color: #3b82f6; }
+.option-cards { display: flex; gap: 8px; flex-wrap: wrap; }
+.option-card {
+  flex: 1; min-width: 100px; padding: 10px 12px; border: 2px solid #e2e8f0;
+  border-radius: 10px; background: white; cursor: pointer; font-size: 13px;
+  font-weight: 600; color: #475569; transition: all .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.option-card:hover { border-color: #93c5fd; background: #f8faff; }
+.option-card.active { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+.option-sub { font-size: 11px; font-weight: 400; color: #94a3b8; text-align: center; }
+.option-chip {
+  padding: 6px 14px; border: 1.5px solid #e2e8f0; border-radius: 20px;
+  background: white; cursor: pointer; font-size: 13px; color: #475569;
+  transition: all .15s;
+}
+.option-chip:hover { border-color: #93c5fd; }
+.option-chip.active { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+.option-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ── Skill search + grid ───────────────────────────────────── */
+.skill-search {
+  width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0;
+  border-radius: 8px; font-size: 14px; margin-bottom: 12px;
+}
+.skill-search:focus { outline: none; border-color: #3b82f6; }
+.selected-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;
+  padding: 10px; background: #f0fdf4; border-radius: 8px; }
+.skill-chip.selected { background: #dcfce7; color: #15803d; border-color: #86efac; cursor: pointer; }
+.skill-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.skill-toggle {
+  padding: 5px 12px; border: 1.5px solid #e2e8f0; border-radius: 20px;
+  background: white; cursor: pointer; font-size: 12px; color: #475569;
+  transition: all .12s;
+}
+.skill-toggle:hover { border-color: #93c5fd; background: #f8faff; }
+.skill-toggle.active { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+
+/* ── Review card ───────────────────────────────────────────── */
+.review-card { background: #f8fafc; border-radius: 12px;
+  padding: 20px; border: 1px solid #e2e8f0; }
+.review-name { font-size: 20px; font-weight: 800; color: #1e293b; }
+.review-level { font-size: 13px; color: #64748b; margin-bottom: 16px; }
+.review-section { margin-bottom: 14px; }
+.review-label { font-size: 11px; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 6px; }
+.review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.review-item { display: flex; flex-direction: column; gap: 2px; }
+.review-item span { font-size: 11px; color: #94a3b8; }
+.review-item strong { font-size: 13px; color: #1e293b; text-transform: capitalize; }
+
+/* ── Unlock banner ─────────────────────────────────────────── */
+.unlock-banner {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-radius: 12px; padding: 18px 20px; color: white;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.unlock-banner-left { display: flex; gap: 14px; align-items: flex-start; }
+.unlock-icon { font-size: 24px; flex-shrink: 0; }
+.unlock-banner strong { display: block; font-size: 15px; margin-bottom: 4px; }
+.unlock-banner p { font-size: 13px; color: #94a3b8; margin: 0; }
+.unlock-btn {
+  padding: 10px 20px; background: #3b82f6; color: white; border: none;
+  border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: background .15s; flex-shrink: 0;
+}
+.unlock-btn:hover { background: #2563eb; }
+.unlock-btn:disabled { background: #475569; cursor: not-allowed; }
+
+/* ── Unscored notice + locked badge ───────────────────────── */
+.unscored-notice {
+  display: flex; gap: 10px; align-items: flex-start; background: #fffbeb;
+  border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px;
+  font-size: 13px; color: #92400e;
+}
+.score-locked {
+  font-size: 13px; color: #94a3b8; background: #f1f5f9;
+  border-radius: 8px; padding: 8px 12px; white-space: nowrap;
+}
+
+/* ── Skill match chips ─────────────────────────────────────── */
+.skill-match-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.skill-match-chip {
+  font-size: 12px; padding: 3px 10px; border-radius: 20px; border: 1px solid;
+}
+.skill-match-chip.match { background: #dcfce7; color: #15803d; border-color: #86efac; }
+.skill-match-chip.no-match { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+/* ── Misc ──────────────────────────────────────────────────── */
+.tab-badge {
+  background: #16a34a; color: white; font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 10px; margin-left: 6px;
+}
+.tag-new { background: #fef3c7; color: #d97706; }
+.custom-badge {
+  background: #fef3c7; color: #d97706; font-size: 11px; font-weight: 700;
+  padding: 2px 7px; border-radius: 10px; margin-left: 6px;
+}

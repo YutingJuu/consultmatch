@@ -6,7 +6,6 @@ import "./App.css";
 
 export default function App() {
   const [session, setSession] = useState(null);
-  // session = { role: "consultant"|"manager", id: "C01"|"M01", name: "..." }
 
   if (!session) {
     return <LoginScreen onLogin={setSession} />;
@@ -22,6 +21,7 @@ export default function App() {
         <div className="header-right">
           <span className="user-badge">
             {session.role === "consultant" ? "👤" : "📋"} {session.name}
+            {session.isCustom && <span className="custom-badge">New</span>}
           </span>
           <button className="logout-btn" onClick={() => setSession(null)}>
             Switch Role
@@ -31,7 +31,10 @@ export default function App() {
 
       <main className="app-main">
         {session.role === "consultant" ? (
-          <ConsultantView consultantId={session.id} />
+          <ConsultantView
+            consultantId={session.id}
+            customProfile={session.isCustom ? session.profile : null}
+          />
         ) : (
           <ManagerView projectId={session.id} />
         )}

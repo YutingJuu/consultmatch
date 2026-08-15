@@ -1,0 +1,363 @@
+import React, { useState } from "react";
+
+const ALL_SKILLS = [
+  "Python", "Machine Learning", "Deep Learning", "NLP", "Statistics", "R",
+  "SQL", "Data ETL", "Data Visualisation", "Power BI", "Tableau",
+  "AWS", "Cloud Architecture", "DevOps", "Kubernetes", "MLOps",
+  "Agile", "Scrum", "Project Management", "Stakeholder Management",
+  "Business Analysis", "Strategy", "Change Management",
+  "UX Design", "Figma", "User Research",
+  "Cybersecurity", "Risk Management", "Compliance",
+  "SAP", "ERP", "Salesforce", "CRM",
+  "Supply Chain", "Logistics Optimisation",
+  "Financial Modelling", "Mergers & Acquisitions",
+  "Data Governance", "Blockchain", "AI Agents",
+  "Client Relationship Management", "Digital Marketing",
+];
+
+const INDUSTRIES = [
+  "Banking", "Insurance", "Technology", "Healthcare",
+  "Government", "Retail", "Logistics", "Telecommunications",
+  "Manufacturing", "Private Equity",
+];
+
+const LEVELS = [
+  { label: "Analyst", value: "Analyst", seniority: 1 },
+  { label: "Consultant", value: "Consultant", seniority: 3 },
+  { label: "Senior Consultant", value: "Senior Consultant", seniority: 5 },
+  { label: "Manager", value: "Manager", seniority: 7 },
+];
+
+const STEPS = ["About You", "Your Skills", "Your Preferences", "Review"];
+
+export default function OnboardingWizard({ onComplete, onBack }) {
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({
+    name: "",
+    level: "Consultant",
+    seniority: 3,
+    available_from: "2026-09-01",
+    skills: [],
+    preferred_industries: [],
+    wfh_preference: "hybrid",
+    work_style: "structured",
+    preferred_duration: "3-6 months",
+    career_goal: "technical_depth",
+  });
+  const [skillSearch, setSkillSearch] = useState("");
+
+  const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const toggleSkill = (skill) => {
+    setForm(f => ({
+      ...f,
+      skills: f.skills.includes(skill)
+        ? f.skills.filter(s => s !== skill)
+        : [...f.skills, skill],
+    }));
+  };
+
+  const toggleIndustry = (ind) => {
+    setForm(f => ({
+      ...f,
+      preferred_industries: f.preferred_industries.includes(ind)
+        ? f.preferred_industries.filter(i => i !== ind)
+        : [...f.preferred_industries, ind],
+    }));
+  };
+
+  const canNext = () => {
+    if (step === 0) return form.name.trim().length > 0;
+    if (step === 1) return form.skills.length > 0;
+    if (step === 2) return form.preferred_industries.length > 0;
+    return true;
+  };
+
+  const handleComplete = () => {
+    const profile = {
+      ...form,
+      id: "CUSTOM",
+      isCustom: true,
+    };
+    onComplete(profile);
+  };
+
+  const filteredSkills = ALL_SKILLS.filter(s =>
+    s.toLowerCase().includes(skillSearch.toLowerCase())
+  );
+
+  const progress = ((step) / (STEPS.length - 1)) * 100;
+
+  return (
+    <div className="login-screen">
+      <div className="wizard-card">
+        {/* Header */}
+        <div className="wizard-header">
+          <button className="back-btn" onClick={step === 0 ? onBack : () => setStep(s => s - 1)}>
+            ← Back
+          </button>
+          <div className="wizard-steps">
+            {STEPS.map((s, i) => (
+              <div key={s} className={`wizard-step ${i === step ? "active" : i < step ? "done" : ""}`}>
+                <div className="step-dot">{i < step ? "✓" : i + 1}</div>
+                <span className="step-label">{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="wizard-progress-bg">
+          <div className="wizard-progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+
+        {/* Step content */}
+        <div className="wizard-body">
+
+          {/* Step 0: About You */}
+          {step === 0 && (
+            <div className="wizard-step-content">
+              <h2>Tell us about yourself</h2>
+              <p className="step-hint">This helps us find projects that match your level and availability.</p>
+
+              <div className="form-field">
+                <label>Your name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sarah Tan"
+                  value={form.name}
+                  onChange={e => update("name", e.target.value)}
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Career level</label>
+                <div className="option-cards">
+                  {LEVELS.map(l => (
+                    <button
+                      key={l.value}
+                      className={`option-card ${form.level === l.value ? "active" : ""}`}
+                      onClick={() => { update("level", l.value); update("seniority", l.seniority); }}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label>Available from</label>
+                <input
+                  type="date"
+                  value={form.available_from}
+                  onChange={e => update("available_from", e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 1: Skills */}
+          {step === 1 && (
+            <div className="wizard-step-content">
+              <h2>Select your skills</h2>
+              <p className="step-hint">
+                Pick all that apply. Selected: <strong>{form.skills.length}</strong>
+              </p>
+
+              <input
+                className="skill-search"
+                placeholder="Search skills..."
+                value={skillSearch}
+                onChange={e => setSkillSearch(e.target.value)}
+              />
+
+              {form.skills.length > 0 && (
+                <div className="selected-skills">
+                  {form.skills.map(s => (
+                    <span key={s} className="skill-chip selected" onClick={() => toggleSkill(s)}>
+                      {s} ✕
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="skill-grid">
+                {filteredSkills.map(s => (
+                  <button
+                    key={s}
+                    className={`skill-toggle ${form.skills.includes(s) ? "active" : ""}`}
+                    onClick={() => toggleSkill(s)}
+                  >
+                    {form.skills.includes(s) ? "✓ " : ""}{s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Preferences */}
+          {step === 2 && (
+            <div className="wizard-step-content">
+              <h2>Your work preferences</h2>
+              <p className="step-hint">This is what makes ConsultMatch different — your preferences matter.</p>
+
+              <div className="form-field">
+                <label>Preferred industries <span className="field-note">(select all that interest you)</span></label>
+                <div className="option-chips">
+                  {INDUSTRIES.map(ind => (
+                    <button
+                      key={ind}
+                      className={`option-chip ${form.preferred_industries.includes(ind) ? "active" : ""}`}
+                      onClick={() => toggleIndustry(ind)}
+                    >
+                      {ind}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label>Work location preference</label>
+                <div className="option-cards">
+                  {["remote", "hybrid", "onsite"].map(w => (
+                    <button
+                      key={w}
+                      className={`option-card ${form.wfh_preference === w ? "active" : ""}`}
+                      onClick={() => update("wfh_preference", w)}
+                    >
+                      {w === "remote" ? "🏠 Remote" : w === "hybrid" ? "🔄 Hybrid" : "🏢 Onsite"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label>Work style</label>
+                <div className="option-cards">
+                  <button
+                    className={`option-card ${form.work_style === "structured" ? "active" : ""}`}
+                    onClick={() => update("work_style", "structured")}
+                  >
+                    📋 Structured<span className="option-sub">Clear processes, defined scope</span>
+                  </button>
+                  <button
+                    className={`option-card ${form.work_style === "flexible" ? "active" : ""}`}
+                    onClick={() => update("work_style", "flexible")}
+                  >
+                    🔀 Flexible<span className="option-sub">Agile, fast-changing environment</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label>Preferred project duration</label>
+                <div className="option-cards">
+                  {["1-3 months", "3-6 months", ">6 months"].map(d => (
+                    <button
+                      key={d}
+                      className={`option-card ${form.preferred_duration === d ? "active" : ""}`}
+                      onClick={() => update("preferred_duration", d)}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-field">
+                <label>Career goal for this project</label>
+                <div className="option-cards">
+                  <button
+                    className={`option-card ${form.career_goal === "technical_depth" ? "active" : ""}`}
+                    onClick={() => update("career_goal", "technical_depth")}
+                  >
+                    🔬 Technical depth<span className="option-sub">Deepen expertise in a domain</span>
+                  </button>
+                  <button
+                    className={`option-card ${form.career_goal === "client_exposure" ? "active" : ""}`}
+                    onClick={() => update("career_goal", "client_exposure")}
+                  >
+                    🤝 Client exposure<span className="option-sub">Build client-facing experience</span>
+                  </button>
+                  <button
+                    className={`option-card ${form.career_goal === "leadership" ? "active" : ""}`}
+                    onClick={() => update("career_goal", "leadership")}
+                  >
+                    🌟 Leadership<span className="option-sub">Lead teams and decisions</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review */}
+          {step === 3 && (
+            <div className="wizard-step-content">
+              <h2>Review your profile</h2>
+              <p className="step-hint">Here's what we'll use to match you with projects.</p>
+
+              <div className="review-card">
+                <div className="review-name">{form.name}</div>
+                <div className="review-level">{form.level}</div>
+
+                <div className="review-section">
+                  <span className="review-label">Skills ({form.skills.length})</span>
+                  <div className="skills-row">
+                    {form.skills.map(s => <span key={s} className="skill-chip">{s}</span>)}
+                  </div>
+                </div>
+
+                <div className="review-section">
+                  <span className="review-label">Preferred industries</span>
+                  <div className="skills-row">
+                    {form.preferred_industries.map(i => <span key={i} className="skill-chip">{i}</span>)}
+                  </div>
+                </div>
+
+                <div className="review-grid">
+                  <div className="review-item">
+                    <span>WFH</span><strong>{form.wfh_preference}</strong>
+                  </div>
+                  <div className="review-item">
+                    <span>Style</span><strong>{form.work_style}</strong>
+                  </div>
+                  <div className="review-item">
+                    <span>Duration</span><strong>{form.preferred_duration}</strong>
+                  </div>
+                  <div className="review-item">
+                    <span>Goal</span><strong>{form.career_goal.replace("_", " ")}</strong>
+                  </div>
+                  <div className="review-item">
+                    <span>Available</span><strong>{form.available_from}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer nav */}
+        <div className="wizard-footer">
+          {step < STEPS.length - 1 ? (
+            <button
+              className="wizard-next-btn"
+              onClick={() => setStep(s => s + 1)}
+              disabled={!canNext()}
+            >
+              Continue →
+            </button>
+          ) : (
+            <button className="wizard-next-btn complete" onClick={handleComplete}>
+              🎯 Find My Matches →
+            </button>
+          )}
+          {step < STEPS.length - 1 && (
+            <p className="skip-note">
+              Step {step + 1} of {STEPS.length}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

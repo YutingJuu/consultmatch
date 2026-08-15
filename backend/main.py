@@ -236,3 +236,17 @@ def get_score(consultant_id: str, project_id: str):
     if not c or not p:
         raise HTTPException(status_code=404, detail="Consultant or project not found")
     return compute_score(c, p)
+
+
+class CustomScoreRequest(BaseModel):
+    consultant: dict
+    project_id: str
+
+
+@app.post("/score/custom")
+def get_custom_score(request: CustomScoreRequest):
+    """Score a custom (onboarded) consultant profile against a project."""
+    p = p_lookup.get(request.project_id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return compute_score(request.consultant, p)

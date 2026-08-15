@@ -4,25 +4,59 @@ import ScoreBadge from "./ScoreBadge";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
-export default function ConsultantView({ consultantId }) {
+export default function ConsultantView({ consultantId, customProfile }) {
   const [profile, setProfile] = useState(null);
-  const [recommendations, setRecommendations] = useState([]);
+  const [projects, setProjects] = useState([]);         // all projects (unscored)
+  const [recommendations, setRecommendations] = useState([]); // scored + ranked
   const [ranked, setRanked] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [tab, setTab] = useState("browse");
+  const [scoresUnlocked, setScoresUnlocked] = useState(false);
+  const [loadingScores, setLoadingScores] = useState(false);
+
+  const isCustom = !!customProfile;
 
   useEffect(() => {
-    axios.get(`${API}/consultants/${consultantId}`).then(r => setProfile(r.data));
-    axios.get(`${API}/consultants/${consultantId}/recommendations`).then(r => {
-      setRecommendations(r.data);
-    });
-    axios.get(`${API}/consultants/${consultantId}/rankings`).then(r => {
-      if (r.data.ranked_ids?.length) {
-        setRanked(r.data.ranked_ids);
-        setSubmitted(true);
-      }
-    });
-  }, [consultantId]);
+    if (isCustom) {
+      // Custom profile — load all projects unscored first
+      setProfile(customProfile);
+      axios.get(`${API}/projects`).then(r => setProjects(r.data));
+    } else {
+      // Existing profile — load scored recommendations immediately
+      axios.get(`${API}/consultants/${consultantId}`).then(r => setProfile(r.data));
+      axios.get(`${API}/consultants/${consultantId}/recommendations`).then(r => {
+        setRecommendations(r.data);
+        setScoresUnlocked(true);
+      });
+      axios.get(`${API}/consultants/${consultantId}/rankings`).then(r => {
+        if (r.data.ranked_ids?.length) {
+          setRanked(r.data.ranked_ids);
+          setSubmitted(true);
+        }
+      });
+    }
+  }, [consultantId, isCustom]);
+
+  const unlockScores = async () => {
+    setLoadingScores(true);
+    try {
+      // Score each project against custom profile
+      const scored = await Promise.all(
+        projects.map(async (p) => {
+          const r = await axios.post(`${API}/score/custom`, {
+            consultant: customProfile,
+            project_id: p.id,
+          });
+          return { ...p, score: r.data };
+        })
+      );
+      const sorted = scored.sort((a, b) => b.score.total - a.score.total);
+      setRecommendations(sorted);
+      setScoresUnlocked(true);
+    } finally {
+      setLoadingScores(false);
+    }
+  };
 
   const toggleRank = (pid) => {
     if (submitted) return;
@@ -48,37 +82,60 @@ export default function ConsultantView({ consultantId }) {
   };
 
   const submitRanking = async () => {
-    await axios.post(`${API}/consultants/rankings`, {
-      id: consultantId,
-      ranked_ids: ranked,
-    });
+    const id = isCustom ? "CUSTOM" : consultantId;
+    await axios.post(`${API}/consultants/rankings`, { id, ranked_ids: ranked });
     setSubmitted(true);
   };
 
   if (!profile) return <div className="loading">Loading...</div>;
 
+  // List to display in browse tab
+  const displayList = scoresUnlocked ? recommendations : projects;
+
   return (
     <div className="view-container">
+
+      {/* Profile completeness banner for custom users */}
+      {isCustom && !scoresUnlocked && (
+        <div className="unlock-banner">
+          <div className="unlock-banner-left">
+            <span className="unlock-icon">🔒</span>
+            <div>
+              <strong>Profile complete! Unlock your compatibility scores</strong>
+              <p>You're seeing all available projects. Click below to see how well each one matches your profile.</p>
+            </div>
+          </div>
+          <button
+            className="unlock-btn"
+            onClick={unlockScores}
+            disabled={loadingScores}
+          >
+            {loadingScores ? "Calculating..." : "✨ Unlock My Scores"}
+          </button>
+        </div>
+      )}
+
       {/* Profile card */}
       <div className="profile-card">
         <div className="profile-header">
           <div>
             <h2>{profile.name}</h2>
             <span className="tag">{profile.level}</span>
-            <span className="tag tag-secondary">Seniority L{profile.seniority}</span>
+            <span className="tag tag-secondary">L{profile.seniority}</span>
+            {isCustom && <span className="tag tag-new">Your Profile</span>}
           </div>
           <div className="profile-meta">
             <span>📅 Available {profile.available_from}</span>
             <span>🏠 {profile.wfh_preference}</span>
-            <span>🎯 {profile.career_goal.replace("_", " ")}</span>
+            <span>🎯 {profile.career_goal?.replace("_", " ")}</span>
           </div>
         </div>
         <div className="skills-row">
           {profile.skills.map(s => <span key={s} className="skill-chip">{s}</span>)}
         </div>
         <div className="pref-row">
-          <span>Preferred industries: {profile.preferred_industries.join(", ")}</span>
-          <span>Work style: {profile.work_style}</span>
+          <span>Industries: {profile.preferred_industries?.join(", ")}</span>
+          <span>Style: {profile.work_style}</span>
           <span>Duration: {profile.preferred_duration}</span>
         </div>
       </div>
@@ -86,24 +143,35 @@ export default function ConsultantView({ consultantId }) {
       {/* Tabs */}
       <div className="tab-bar">
         <button className={tab === "browse" ? "tab active" : "tab"} onClick={() => setTab("browse")}>
-          🔍 Browse Projects ({recommendations.length})
+          🔍 Browse Projects ({displayList.length})
+          {scoresUnlocked && <span className="tab-badge">Scored</span>}
         </button>
         <button className={tab === "rank" ? "tab active" : "tab"} onClick={() => setTab("rank")}>
-          📝 My Preferences {ranked.length > 0 ? `(${ranked.length} selected)` : ""}
+          📝 My Preferences {ranked.length > 0 ? `(${ranked.length})` : ""}
         </button>
       </div>
 
       {tab === "browse" && (
         <div className="card-list">
-          {recommendations.map((p, i) => (
+          {!scoresUnlocked && (
+            <div className="unscored-notice">
+              <span>📋</span>
+              <span>Showing all {projects.length} available projects. Complete your profile setup to see compatibility scores and personalised rankings.</span>
+            </div>
+          )}
+
+          {displayList.map((p, i) => (
             <div key={p.id} className={`project-card ${ranked.includes(p.id) ? "selected" : ""}`}>
               <div className="card-top">
                 <div>
-                  <span className="rank-num">#{i + 1}</span>
+                  {scoresUnlocked && <span className="rank-num">#{i + 1}</span>}
                   <strong>{p.name}</strong>
                   <span className="card-client">{p.client}</span>
                 </div>
-                <ScoreBadge score={p.score.total} />
+                {scoresUnlocked && p.score
+                  ? <ScoreBadge score={p.score.total} />
+                  : <div className="score-locked">🔒 Score locked</div>
+                }
               </div>
 
               <div className="card-meta">
@@ -114,37 +182,46 @@ export default function ConsultantView({ consultantId }) {
                 <span>👥 {p.team_size} people</span>
               </div>
 
-              <div className="score-breakdown">
-                <span>Skills {p.score.breakdown.skills}/40</span>
-                <span>Preferences {p.score.breakdown.preference}/40</span>
-                <span>Seniority {p.score.breakdown.seniority}/20</span>
-              </div>
+              {scoresUnlocked && p.score && (
+                <>
+                  <div className="score-breakdown">
+                    <span>Skills {p.score.breakdown.skills}/40</span>
+                    <span>Preferences {p.score.breakdown.preference}/40</span>
+                    <span>Seniority {p.score.breakdown.seniority}/20</span>
+                  </div>
 
-              {p.score.matched_skills.length > 0 && (
-                <div className="matched-skills">
-                  ✅ Matched: {p.score.matched_skills.join(", ")}
-                </div>
+                  {/* Per-skill breakdown */}
+                  <div className="skill-match-row">
+                    {p.required_skills.map(s => {
+                      const matched = p.score.matched_skills.includes(s.toLowerCase());
+                      return (
+                        <span key={s} className={`skill-match-chip ${matched ? "match" : "no-match"}`}>
+                          {matched ? "✅" : "❌"} {s}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  <div className="card-flags">
+                    {p.score.industry_match && <span className="flag green">✓ Industry fit</span>}
+                    {p.score.wfh_match && <span className="flag green">✓ WFH match</span>}
+                    {p.score.style_match && <span className="flag green">✓ Work style match</span>}
+                    {p.score.duration_match && <span className="flag green">✓ Duration match</span>}
+                    {!p.score.industry_match && <span className="flag grey">✗ Industry mismatch</span>}
+                    {!p.score.wfh_match && <span className="flag grey">✗ WFH mismatch</span>}
+                  </div>
+                </>
               )}
-
-              <div className="card-flags">
-                {p.score.industry_match && <span className="flag green">✓ Industry fit</span>}
-                {p.score.wfh_match && <span className="flag green">✓ WFH match</span>}
-                {p.score.style_match && <span className="flag green">✓ Work style match</span>}
-                {p.score.duration_match && <span className="flag green">✓ Duration match</span>}
-                {!p.score.industry_match && <span className="flag grey">✗ Industry mismatch</span>}
-                {!p.score.wfh_match && <span className="flag grey">✗ WFH mismatch</span>}
-              </div>
 
               <p className="card-desc">{p.description}</p>
 
-              {!submitted && (
-                <button
-                  className={`select-btn ${ranked.includes(p.id) ? "selected" : ""}`}
-                  onClick={() => toggleRank(p.id)}
-                >
-                  {ranked.includes(p.id) ? "✓ Added to preferences" : "+ Add to preferences"}
-                </button>
-              )}
+              <button
+                className={`select-btn ${ranked.includes(p.id) ? "selected" : ""}`}
+                onClick={() => toggleRank(p.id)}
+                disabled={submitted}
+              >
+                {ranked.includes(p.id) ? "✓ Added to preferences" : "+ Add to preferences"}
+              </button>
             </div>
           ))}
         </div>
@@ -156,16 +233,16 @@ export default function ConsultantView({ consultantId }) {
           <p className="rank-hint">
             {submitted
               ? "✅ Preferences submitted. Waiting for matching to run."
-              : "Drag or use arrows to reorder. Your top choice is first."}
+              : "Order your preferred projects. #1 is your top choice."}
           </p>
 
           {ranked.length === 0 && (
-            <p className="empty-msg">No projects added yet. Browse and add projects from the Browse tab.</p>
+            <p className="empty-msg">No projects added yet. Browse and add from the Browse tab.</p>
           )}
 
           <div className="rank-list">
             {ranked.map((pid, idx) => {
-              const p = recommendations.find(r => r.id === pid);
+              const p = displayList.find(r => r.id === pid);
               if (!p) return null;
               return (
                 <div key={pid} className="rank-item">
@@ -174,7 +251,7 @@ export default function ConsultantView({ consultantId }) {
                     <strong>{p.name}</strong>
                     <span>{p.client} · {p.industry}</span>
                   </div>
-                  <ScoreBadge score={p.score.total} small />
+                  {scoresUnlocked && p.score && <ScoreBadge score={p.score.total} small />}
                   {!submitted && (
                     <div className="rank-controls">
                       <button onClick={() => moveUp(pid)}>▲</button>
