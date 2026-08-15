@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import axios from "axios";
+
+const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 const ALL_SKILLS = [
   "Python", "Machine Learning", "Deep Learning", "NLP", "Statistics", "R",
@@ -73,12 +76,19 @@ export default function OnboardingWizard({ onComplete, onBack }) {
     return true;
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    const uniqueId = "CUSTOM_" + Date.now();
     const profile = {
       ...form,
-      id: "CUSTOM",
+      id: uniqueId,
       isCustom: true,
     };
+    // Register with backend so they participate in matching
+    try {
+      await axios.post(`${API}/consultants/register`, profile);
+    } catch (e) {
+      console.error("Failed to register profile", e);
+    }
     onComplete(profile);
   };
 

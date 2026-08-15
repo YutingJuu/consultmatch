@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ScoreBadge from "./ScoreBadge";
+import CVTailor from "./CVTailor";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -13,6 +14,7 @@ export default function ConsultantView({ consultantId, customProfile }) {
   const [tab, setTab] = useState("browse");
   const [scoresUnlocked, setScoresUnlocked] = useState(false);
   const [loadingScores, setLoadingScores] = useState(false);
+  const [applyingTo, setApplyingTo] = useState(null);
 
   const isCustom = !!customProfile;
 
@@ -222,19 +224,29 @@ export default function ConsultantView({ consultantId, customProfile }) {
               >
                 {ranked.includes(p.id) ? "✓ Added to preferences" : "+ Add to preferences"}
               </button>
+              <button
+                className="apply-btn"
+                onClick={() => setApplyingTo(p)}
+              >
+                📄 Apply to this Role
+              </button>
             </div>
           ))}
         </div>
       )}
 
-      {tab === "rank" && (
+      {applyingTo && (
+        <CVTailor
+          project={applyingTo}
+          consultantProfile={profile}
+          onClose={() => setApplyingTo(null)}
+        />
+      )}
+
+      {tab === "rank" && !submitted && (
         <div className="rank-panel">
           <h3>Your Preference Ranking</h3>
-          <p className="rank-hint">
-            {submitted
-              ? "✅ Preferences submitted. Waiting for matching to run."
-              : "Order your preferred projects. #1 is your top choice."}
-          </p>
+          <p className="rank-hint">Order your preferred projects. #1 is your top choice.</p>
 
           {ranked.length === 0 && (
             <p className="empty-msg">No projects added yet. Browse and add from the Browse tab.</p>
@@ -252,23 +264,60 @@ export default function ConsultantView({ consultantId, customProfile }) {
                     <span>{p.client} · {p.industry}</span>
                   </div>
                   {scoresUnlocked && p.score && <ScoreBadge score={p.score.total} small />}
-                  {!submitted && (
-                    <div className="rank-controls">
-                      <button onClick={() => moveUp(pid)}>▲</button>
-                      <button onClick={() => moveDown(pid)}>▼</button>
-                      <button onClick={() => toggleRank(pid)} className="remove-btn">✕</button>
-                    </div>
-                  )}
+                  <div className="rank-controls">
+                    <button onClick={() => moveUp(pid)}>▲</button>
+                    <button onClick={() => moveDown(pid)}>▼</button>
+                    <button onClick={() => toggleRank(pid)} className="remove-btn">✕</button>
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          {!submitted && ranked.length > 0 && (
+          {ranked.length > 0 && (
             <button className="submit-btn" onClick={submitRanking}>
               Submit Preferences →
             </button>
           )}
+        </div>
+      )}
+
+      {tab === "rank" && submitted && (
+        <div className="confirmation-screen">
+          <div className="confirmation-icon">✅</div>
+          <h3>Preferences Submitted!</h3>
+          <p>Your project preferences have been recorded successfully.</p>
+
+          <div className="confirmation-list">
+            <p className="confirmation-list-title">Your ranked preferences:</p>
+            {ranked.map((pid, idx) => {
+              const p = displayList.find(r => r.id === pid);
+              if (!p) return null;
+              return (
+                <div key={pid} className="confirmation-item">
+                  <span className="rank-pos">{idx + 1}</span>
+                  <div className="rank-info">
+                    <strong>{p.name}</strong>
+                    <span>{p.client} · {p.industry}</span>
+                  </div>
+                  {scoresUnlocked && p.score && <ScoreBadge score={p.score.total} small />}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="confirmation-next">
+            <div className="next-step-badge">📬 What happens next?</div>
+            <p>
+              Your profile and project preferences are now visible to project managers
+              and the staffing team. You will be notified if a project team expresses
+              interest in your profile.
+            </p>
+            <p className="confirmation-note">
+              In the meantime, you can continue browsing projects and update your
+              preferences at any time.
+            </p>
+          </div>
         </div>
       )}
     </div>
