@@ -43,7 +43,47 @@ consultmatch/
 
 ---
 
-## Setup and Run
+## Live Demo
+
+| | URL |
+|---|---|
+| **Frontend** | https://consultmatch.vercel.app *(update after deploying)* |
+| **Backend API** | https://consultmatch-api.onrender.com *(update after deploying)* |
+| **API Docs** | https://consultmatch-api.onrender.com/docs |
+
+> **Note:** The backend runs on Render's free tier and may take ~30 seconds to wake up after inactivity. Open the app a minute before your demo.
+
+---
+
+## Deployment Guide
+
+### Deploy Backend to Render
+
+1. Push this repo to GitHub
+2. Go to [render.com](https://render.com) → **New** → **Web Service**
+3. Connect your GitHub repo
+4. Render will auto-detect `render.yaml` — just click **Deploy**
+5. Copy your Render URL (e.g. `https://consultmatch-api.onrender.com`)
+
+### Deploy Frontend to Vercel
+
+1. Go to [vercel.com](https://vercel.com) → **Add New Project** → Import your repo
+2. Set **Root Directory** to `frontend`
+3. Under **Environment Variables**, add:
+   ```
+   REACT_APP_API_URL = https://consultmatch-api.onrender.com
+   ```
+   *(use your actual Render URL from the step above)*
+4. Click **Deploy**
+5. Share the Vercel URL with your judges
+
+### After deploying — update CORS
+
+In `backend/main.py`, add your actual Vercel URL to `ALLOWED_ORIGINS` if it differs from the default, then redeploy.
+
+---
+
+## Local Development
 
 ### Prerequisites
 - Python 3.10+

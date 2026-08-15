@@ -3,7 +3,7 @@ import axios from "axios";
 import ScoreBadge from "./ScoreBadge";
 import MatchResults from "./MatchResults";
 
-const API = "http://localhost:8000";
+const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 export default function ManagerView({ projectId }) {
   const [project, setProject] = useState(null);

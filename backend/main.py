@@ -21,9 +21,20 @@ from matching import gale_shapley, build_preference_lists
 
 app = FastAPI(title="ConsultMatch API", version="1.0.0")
 
+import os
+
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    # Vercel preview and production URLs — update after deploying
+    "https://consultmatch.vercel.app",
+    "https://consultmatch-git-main.vercel.app",
+]
+
+# Allow any Vercel preview URL (*.vercel.app) via regex
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
