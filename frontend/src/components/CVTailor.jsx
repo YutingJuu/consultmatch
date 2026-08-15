@@ -27,7 +27,7 @@ MSc Business Analytics, NUS – AI & Analytics Projects
 
 export default function CVTailor({ project, consultantProfile, onClose }) {
   const [step, setStep] = useState("upload"); // upload | tailoring | review | submitted
-  const [cvText, setCvText] = useState("");
+  const [cvText, setCvText] = useState(consultantProfile?.cvText && !consultantProfile.cvText.startsWith("[PDF") ? consultantProfile.cvText : "");
   const [tailoredText, setTailoredText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -155,7 +155,9 @@ Rules:
               <div className="cv-divider"><span>or</span></div>
 
               <button className="cv-default-btn" onClick={useDefault}>
-                📋 Use my profile CV (pre-loaded)
+                {consultantProfile?.cvText && !consultantProfile.cvText.startsWith("[PDF")
+                  ? "📋 Use my profile CV"
+                  : "📋 Use sample CV (demo)"}
               </button>
 
               <div className="cv-divider"><span>or paste directly</span></div>

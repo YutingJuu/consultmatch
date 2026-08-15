@@ -2,14 +2,27 @@ import React, { useState } from "react";
 import LoginScreen from "./components/LoginScreen";
 import ConsultantView from "./components/ConsultantView";
 import ManagerView from "./components/ManagerView";
+import ProfilePage from "./components/ProfilePage";
 import "./App.css";
 
 export default function App() {
   const [session, setSession] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
 
-  if (!session) {
-    return <LoginScreen onLogin={setSession} />;
-  }
+  const handleLogin = (sess) => {
+    setSession(sess);
+    setShowProfile(false);
+  };
+
+  const handleProfileUpdate = (updatedProfile) => {
+    setSession(s => ({
+      ...s,
+      name: updatedProfile.name,
+      profile: updatedProfile,
+    }));
+  };
+
+  if (!session) return <LoginScreen onLogin={handleLogin} />;
 
   return (
     <div className="app">
@@ -19,10 +32,18 @@ export default function App() {
           <span className="header-sub">Preference-Driven Allocation</span>
         </div>
         <div className="header-right">
-          <span className="user-badge">
-            {session.role === "consultant" ? "👤" : "📋"} {session.name}
-            {session.isCustom && <span className="custom-badge">New</span>}
-          </span>
+          {session.role === "consultant" && (
+            <button className="profile-header-btn"
+              onClick={() => setShowProfile(true)}>
+              👤 {session.name}
+              {session.isCustom && <span className="custom-badge">You</span>}
+              {session.isCustom && !(session.profile?.cvText) &&
+                <span className="cv-missing-dot" title="CV not uploaded">●</span>}
+            </button>
+          )}
+          {session.role === "manager" && (
+            <span className="user-badge">📋 {session.name}</span>
+          )}
           <button className="logout-btn" onClick={() => setSession(null)}>
             Switch Role
           </button>
@@ -39,6 +60,14 @@ export default function App() {
           <ManagerView projectId={session.id} />
         )}
       </main>
+
+      {showProfile && session.isCustom && (
+        <ProfilePage
+          profile={session.profile}
+          onUpdate={handleProfileUpdate}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
     </div>
   );
 }

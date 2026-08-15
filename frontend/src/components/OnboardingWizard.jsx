@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import axios from "axios";
+import { getDistrictFromPostal } from "../utils/locationUtils";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -31,7 +32,7 @@ const LEVELS = [
   { label: "Manager", value: "Manager", seniority: 7 },
 ];
 
-const STEPS = ["About You", "Your Skills", "Your Preferences", "Review"];
+const STEPS = ["About You", "Your Skills", "Upload CV", "Your Preferences", "Review"];
 
 export default function OnboardingWizard({ onComplete, onBack }) {
   const [step, setStep] = useState(0);
@@ -46,7 +47,13 @@ export default function OnboardingWizard({ onComplete, onBack }) {
     work_style: "structured",
     preferred_duration: "3-6 months",
     career_goal: "technical_depth",
+    cvText: "",
+    cvFileName: "",
+    postalCode: "",
+    homeDistrict: "",
+    homeZone: "",
   });
+  const fileRef = useRef();
   const [skillSearch, setSkillSearch] = useState("");
 
   const update = (key, val) => setForm(f => ({ ...f, [key]: val }));
@@ -72,7 +79,8 @@ export default function OnboardingWizard({ onComplete, onBack }) {
   const canNext = () => {
     if (step === 0) return form.name.trim().length > 0;
     if (step === 1) return form.skills.length > 0;
-    if (step === 2) return form.preferred_industries.length > 0;
+    if (step === 2) return true; // CV upload is optional (can skip)
+    if (step === 3) return form.preferred_industries.length > 0;
     return true;
   };
 
@@ -82,6 +90,8 @@ export default function OnboardingWizard({ onComplete, onBack }) {
       ...form,
       id: uniqueId,
       isCustom: true,
+      cvText: form.cvText,
+      cvFileName: form.cvFileName,
     };
     // Register with backend so they participate in matching
     try {
@@ -163,6 +173,35 @@ export default function OnboardingWizard({ onComplete, onBack }) {
                   onChange={e => update("available_from", e.target.value)}
                 />
               </div>
+
+              <div className="form-field">
+                <label>Home postal code
+                  <span className="field-note"> — used to estimate commute to project sites</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 078881"
+                  maxLength={6}
+                  value={form.postalCode}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    update("postalCode", val);
+                    if (val.length >= 2) {
+                      const info = getDistrictFromPostal(val);
+                      if (info) {
+                        update("homeDistrict", info.district);
+                        update("homeZone", info.zone);
+                      }
+                    }
+                  }}
+                />
+                {form.homeDistrict && (
+                  <div className="postal-result">
+                    📍 <strong>{form.homeDistrict}</strong>
+                    <span className="zone-badge">{form.homeZone}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -205,8 +244,61 @@ export default function OnboardingWizard({ onComplete, onBack }) {
             </div>
           )}
 
-          {/* Step 2: Preferences */}
+
+          {/* Step 2: CV Upload */}
           {step === 2 && (
+            <div className="wizard-step-content">
+              <h2>Upload your CV</h2>
+              <p className="step-hint">
+                We'll use this to auto-tailor your CV when you apply to specific roles.
+                You can skip this and upload later from your profile page.
+              </p>
+
+              <div className="cv-upload-zone" onClick={() => fileRef.current.click()}>
+                <span className="upload-icon">📄</span>
+                <span>{form.cvFileName || "Click to upload CV (PDF or .txt)"}</span>
+                <span className="upload-sub">Supported: PDF, TXT</span>
+                <input ref={fileRef} type="file" accept=".pdf,.txt"
+                  style={{display:"none"}}
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    update("cvFileName", file.name);
+                    if (file.type === "text/plain") {
+                      const text = await file.text();
+                      update("cvText", text);
+                    } else {
+                      // PDF — store filename, text extraction happens on apply
+                      update("cvText", `[PDF uploaded: ${file.name}]`);
+                    }
+                  }}
+                />
+              </div>
+
+              {form.cvFileName && (
+                <div className="cv-preview-notice">
+                  ✅ {form.cvFileName} uploaded
+                </div>
+              )}
+
+              <div className="cv-divider"><span>or paste your experience section</span></div>
+
+              <textarea
+                className="cv-textarea"
+                placeholder="Paste your CV experience section here..."
+                value={form.cvText.startsWith("[PDF") ? "" : form.cvText}
+                onChange={e => { update("cvText", e.target.value); update("cvFileName", ""); }}
+                rows={8}
+              />
+
+              <p className="skip-note" style={{marginTop:"12px"}}>
+                💡 You can also skip this step and upload from your profile page later.
+              </p>
+            </div>
+          )}
+
+          {/* Step 3: Preferences */}
+          {step === 3 && (
             <div className="wizard-step-content">
               <h2>Your work preferences</h2>
               <p className="step-hint">This is what makes ConsultMatch different — your preferences matter.</p>
@@ -300,8 +392,8 @@ export default function OnboardingWizard({ onComplete, onBack }) {
             </div>
           )}
 
-          {/* Step 3: Review */}
-          {step === 3 && (
+          {/* Step 4: Review */}
+          {step === 4 && (
             <div className="wizard-step-content">
               <h2>Review your profile</h2>
               <p className="step-hint">Here's what we'll use to match you with projects.</p>
@@ -317,6 +409,18 @@ export default function OnboardingWizard({ onComplete, onBack }) {
                   </div>
                 </div>
 
+                {form.cvFileName && (
+                  <div className="review-section">
+                    <span className="review-label">CV</span>
+                    <span className="skill-chip">📄 {form.cvFileName}</span>
+                  </div>
+                )}
+                {form.cvText && !form.cvFileName && (
+                  <div className="review-section">
+                    <span className="review-label">CV</span>
+                    <span className="skill-chip">📝 Pasted text ({form.cvText.length} chars)</span>
+                  </div>
+                )}
                 <div className="review-section">
                   <span className="review-label">Preferred industries</span>
                   <div className="skills-row">

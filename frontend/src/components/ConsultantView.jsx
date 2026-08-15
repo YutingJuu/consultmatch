@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ScoreBadge from "./ScoreBadge";
 import CVTailor from "./CVTailor";
+import { getProximityScore, getProximityLabel } from "../utils/locationUtils";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -178,10 +179,19 @@ export default function ConsultantView({ consultantId, customProfile }) {
 
               <div className="card-meta">
                 <span>🏭 {p.industry}</span>
-                <span>📍 {p.location}</span>
+                <span>📍 {p.district || p.location}</span>
                 <span>🏠 {p.wfh_policy}</span>
                 <span>⏱ {p.duration}</span>
                 <span>👥 {p.team_size} people</span>
+                {profile?.homeZone && p.zone && (() => {
+                  const score = getProximityScore(profile.homeZone, p.zone);
+                  const prox = getProximityLabel(score);
+                  return (
+                    <span className="proximity-badge" style={{color: prox.color}}>
+                      {prox.icon} {prox.label}
+                    </span>
+                  );
+                })()}
               </div>
 
               {scoresUnlocked && p.score && (
