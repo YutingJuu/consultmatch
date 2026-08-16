@@ -271,47 +271,56 @@ async def tailor_cv(request: TailorRequest):
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key: raise HTTPException(500, "ANTHROPIC_API_KEY not configured")
 
-    role_context = f"""Role: {r['role_title']} — {r['project_name']} ({r['client']}, {r['industry']})
-Required skills: {", ".join(r['required_skills'])}
-Job description: {r['description']}"""
+    role_context = (
+        f"Role: {r['role_title']} — {r['project_name']} ({r['client']}, {r['industry']})"
+        f"\nRequired skills: {', '.join(r['required_skills'])}"
+        f"\nJob description: {r['description']}"
+    )
+
+    tailor_instructions = (
+        "You are a senior CV writer at a top management consulting firm, expert at tailoring CVs for specific roles.\n\n"
+        f"The consultant is applying to:\n{role_context}\n\n"
+        "Your task is to aggressively tailor the experience section for this specific role. Follow these rules:\n\n"
+        "1. REORDER: Within each job, move bullets most relevant to the target role to the top. Bury or remove irrelevant bullets.\n"
+        "2. REFRAME: Rephrase bullets to use language from the job description and highlight transferable skills. Name exact tools and methods that match required skills.\n"
+        "3. QUANTIFY: Where numbers exist in the original, keep them. Add specificity where the original is vague.\n"
+        "4. DOWNPLAY: Shrink or remove bullets that add no value for this role. Dropping bullets entirely is acceptable if they are irrelevant.\n"
+        "5. KEEP FACTS: Do not invent experience, numbers, or technologies not in the original CV.\n"
+        "6. KEEP STRUCTURE: Preserve all job titles, company names, and date ranges exactly as-is.\n"
+        "7. OUTPUT FORMAT: Same format as input (bullet points under each job). Output ONLY the rewritten experience section — no preamble, no explanation.\n\n"
+        "Be bold. A generic CV that slightly reorders bullets is not acceptable. The output should read as if this consultant was born for this specific role."
+    )
 
     if request.file_base64 and request.file_name:
         import base64
         file_bytes = base64.b64decode(request.file_base64)
         name = request.file_name.lower()
-        TAILOR_INSTRUCTIONS = f"""You are a senior CV writer at a top management consulting firm, expert at tailoring CVs for specific roles.
-
-The consultant is applying to:
-{role_context}
-
-Your task is to aggressively tailor the experience section for this specific role. Follow these rules:
-
-1. REORDER: Within each job, move bullets most relevant to the target role to the top. Bury or remove irrelevant bullets.
-2. REFRAME: Rephrase bullets to use language from the job description and emphasise transferable skills. Be specific — name the exact tools, technologies, or methods that match the required skills.
-3. QUANTIFY: Where numbers exist in the original, keep them. Add specificity where the original is vague.
-4. DOWNPLAY: Shrink or remove bullets that add no value for this specific role. It is OK to drop bullets entirely if they are irrelevant.
-5. KEEP FACTS: Do not invent experience, numbers, or technologies that are not in the original CV.
-6. KEEP STRUCTURE: Preserve all job titles, company names, and date ranges exactly as-is.
-7. OUTPUT FORMAT: Use the same format as the input (bullet points under each job). Output ONLY the rewritten experience section — no preamble, no explanation, no headers outside the experience section.
-
-Be bold. A generic CV that slightly reorders bullets is not acceptable. The output should read as if this consultant was born for this specific role."""
-
-    if name.endswith(".pdf"):
-            messages = [{"role":"user","content":[
-                {"type":"document","source":{"type":"base64","media_type":"application/pdf","data":request.file_base64}},
-                {"type":"text","text":TAILOR_INSTRUCTIONS + "\n\nThe CV is attached as a PDF. Extract the experience section and tailor it as instructed."}
+        if name.endswith(".pdf"):
+            messages = [{"role": "user", "content": [
+                {"type": "document", "source": {
+                    "type": "base64", "media_type": "application/pdf",
+                    "data": request.file_base64
+                }},
+                {"type": "text", "text": tailor_instructions + "\n\nThe CV is attached as a PDF. Extract the experience section and tailor it as instructed."}
             ]}]
         else:
             extracted = extract_text_from_file(file_bytes, request.file_name)
-            if not extracted: raise HTTPException(400, "Could not extract text from file")
-            messages = [{"role":"user","content":TAILOR_INSTRUCTIONS + f"\n\nHere is the CV content extracted from {request.file_name}:\n\n{extracted}"}]
+            if not extracted:
+                raise HTTPException(400, "Could not extract text from file")
+            messages = [{"role": "user", "content":
+                tailor_instructions + f"\n\nHere is the CV content extracted from {request.file_name}:\n\n{extracted}"}]
     else:
-        messages = [{"role":"user","content":TAILOR_INSTRUCTIONS + f"\n\nHere is the consultant's experience section:\n\n{request.cv_text}"}]
+        messages = [{"role": "user", "content":
+            tailor_instructions + f"\n\nHere is the consultant's experience section:\n\n{request.cv_text}"}]
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             "https://api.anthropic.com/v1/messages",
-            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            },
             json={"model": "claude-sonnet-4-6", "max_tokens": 2000, "messages": messages},
         )
     if response.status_code != 200:
