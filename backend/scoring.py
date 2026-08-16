@@ -1,5 +1,5 @@
 """
-scoring.py — compatibility scoring using real Accenture CL levels
+scoring.py — score consultant against a ROLE posting (not project).
 Score (0-100): Skills 40pts | Preferences 40pts | CL fit 20pts
 """
 
@@ -13,42 +13,32 @@ WFH_COMPAT = {
     ("remote","onsite"):0.0,("onsite","remote"):0.0,
 }
 
-def score_skills(c, p):
+def score_skills(c, role):
     cs = set(s.lower() for s in c.get("skills",[]))
-    ps = set(s.lower() for s in p.get("required_skills",[]))
-    if not ps: return 0.0
-    return len(cs & ps) / len(ps)
+    rs = set(s.lower() for s in role.get("required_skills",[]))
+    if not rs: return 0.0
+    return len(cs & rs) / len(rs)
 
-def score_cl(c, p):
-    """Score CL fit against slot range (if project has slots) or seniority_required."""
+def score_cl(c, role):
     c_cl = c.get("cl", 9)
-    slots = p.get("team_slots", [])
-    if slots:
-        # Best fit across any slot
-        best = 0.0
-        for slot in slots:
-            lo, hi = slot["cl_range"]
-            if lo <= c_cl <= hi:
-                best = 1.0; break
-            elif c_cl == lo - 1 or c_cl == hi + 1:
-                best = max(best, 0.5)
-        return best
-    else:
-        req = p.get("seniority_required", 9)
-        diff = abs(c_cl - req)
-        return 1.0 if diff == 0 else (0.5 if diff <= 1 else 0.0)
+    lo, hi = role.get("cl_range", [9, 9])
+    if lo <= c_cl <= hi: return 1.0
+    if c_cl == lo - 1 or c_cl == hi + 1: return 0.5
+    return 0.0
 
-def score_preferences(c, p):
+def score_preferences(c, role):
     scores = {
-        "industry": 1.0 if p.get("industry") in c.get("preferred_industries",[]) else 0.0,
-        "wfh": WFH_COMPAT.get((c.get("wfh_preference","hybrid"), p.get("wfh_policy","hybrid")), 0.0),
-        "work_style": 1.0 if c.get("work_style") == p.get("preferred_work_style") else 0.3,
-        "duration": 1.0 if c.get("preferred_duration") == p.get("duration") else 0.2,
+        "industry": 1.0 if role.get("industry") in c.get("preferred_industries",[]) else 0.0,
+        "wfh": WFH_COMPAT.get((c.get("wfh_preference","hybrid"), role.get("wfh_policy","hybrid")), 0.0),
+        "work_style": 1.0 if c.get("work_style") == role.get("preferred_work_style") else 0.3,
+        "duration": 1.0 if c.get("preferred_duration") == role.get("duration") else 0.2,
     }
     return sum(PREF_W[k] * scores[k] for k in scores)
 
-def compute_score(c, p):
-    sk = score_skills(c, p);  cl = score_cl(c, p);  pr = score_preferences(c, p)
+def compute_score(c, role):
+    sk = score_skills(c, role)
+    cl = score_cl(c, role)
+    pr = score_preferences(c, role)
     breakdown = {
         "skills":     round(sk * 100 * WEIGHTS["skills"], 1),
         "cl":         round(cl * 100 * WEIGHTS["cl"], 1),
@@ -56,20 +46,22 @@ def compute_score(c, p):
     }
     total = round(sum(breakdown.values()), 1)
     cs = set(s.lower() for s in c.get("skills",[]))
-    ps = set(s.lower() for s in p.get("required_skills",[]))
+    rs = set(s.lower() for s in role.get("required_skills",[]))
     return {
         "total": total, "breakdown": breakdown,
-        "matched_skills": list(cs & ps),
-        "industry_match": p.get("industry") in c.get("preferred_industries",[]),
-        "wfh_match": c.get("wfh_preference") == p.get("wfh_policy"),
-        "style_match": c.get("work_style") == p.get("preferred_work_style"),
-        "duration_match": c.get("preferred_duration") == p.get("duration"),
+        "matched_skills": list(cs & rs),
+        "industry_match": role.get("industry") in c.get("preferred_industries",[]),
+        "wfh_match": c.get("wfh_preference") == role.get("wfh_policy"),
+        "style_match": c.get("work_style") == role.get("preferred_work_style"),
+        "duration_match": c.get("preferred_duration") == role.get("duration"),
     }
 
-def rank_projects_for_consultant(c, projects):
-    return sorted([{**p, "score": compute_score(c, p)} for p in projects],
+def rank_roles_for_consultant(c, roles):
+    return sorted([{**r, "score": compute_score(c, r)} for r in roles],
                   key=lambda x: x["score"]["total"], reverse=True)
 
-def rank_consultants_for_project(p, consultants):
-    return sorted([{**c, "score": compute_score(c, p)} for c in consultants],
+def rank_consultants_for_role(role, consultants):
+    lo, hi = role.get("cl_range", [7, 11])
+    eligible = [c for c in consultants if lo <= c.get("cl", 9) <= hi]
+    return sorted([{**c, "score": compute_score(c, role)} for c in eligible],
                   key=lambda x: x["score"]["total"], reverse=True)
