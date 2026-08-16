@@ -147,6 +147,7 @@ export default function LoginScreen({ onLogin }) {
 
   // ── Manager login ────────────────────────────────────────────────────────
   if (role === "manager") {
+    const selectedProject = projects.find(x => x.manager_id === selectedManagerId);
     return (
       <div className="login-screen">
         <div className="login-card">
@@ -166,23 +167,34 @@ export default function LoginScreen({ onLogin }) {
             </select>
           </div>
 
-          {selectedManagerId && (() => {
-            const p = projects.find(x => x.manager_id === selectedManagerId);
-            if (!p) return null;
-            return (
-              <div className="profile-preview">
-                <div className="preview-row"><span>Client</span><strong>{p.client}</strong></div>
-                <div className="preview-row"><span>Industry</span><strong>{p.industry}</strong></div>
-                <div className="preview-row"><span>Duration</span><strong>{p.duration}</strong></div>
-                <div className="preview-row"><span>WFH</span><strong>{p.wfh_policy}</strong></div>
-                <div className="preview-skills">
-                  {p.required_skills.map(s => <span key={s} className="skill-chip">{s}</span>)}
-                </div>
+          {selectedProject && (
+            <div className="profile-preview">
+              <div className="preview-row">
+                <span>Client</span><strong>{selectedProject.client}</strong>
               </div>
-            );
-          })()}
+              <div className="preview-row">
+                <span>Industry</span><strong>{selectedProject.industry}</strong>
+              </div>
+              <div className="preview-row">
+                <span>Duration</span><strong>{selectedProject.duration}</strong>
+              </div>
+              <div className="preview-row">
+                <span>WFH</span><strong>{selectedProject.wfh_policy}</strong>
+              </div>
+              <div className="preview-row">
+                <span>Roles</span>
+                <strong>{selectedProject.team_slots?.length || 0} open</strong>
+              </div>
+              <div className="preview-skills">
+                {selectedProject.team_slots?.map(s => (
+                  <span key={s.slot_id} className="skill-chip">{s.role}</span>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <button className="login-btn" onClick={handleManagerLogin}>
+          <button className="login-btn" onClick={handleManagerLogin}
+            disabled={!selectedProject}>
             Enter as Project Manager →
           </button>
         </div>
