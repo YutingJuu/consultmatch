@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import OnboardingWizard from "./OnboardingWizard";
+import ProjectWizard from "./ProjectWizard";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
-// 3 curated sample profiles — CL11 Analyst, CL9 Consultant, CL8 Associate Manager
-const SAMPLE_IDS = ["C07", "C01", "C04"];
-// C07: Grace Koh — CL11 Analyst, Healthcare/Gov, structured, onsite
-// C01: Alice Tan — CL9 Consultant, ML/Python, Banking/Tech, hybrid
-// C04: David Ng — CL8 Associate Manager, Strategy/BA, Banking/Insurance, hybrid
+// 5 curated sample profiles — varied CLs and backgrounds
+const SAMPLE_IDS = ["C07", "C05", "C01", "C04", "C15"];
+// C07: Grace Koh      — CL11 Analyst, Healthcare/Gov, onsite
+// C05: Eva Chen       — CL10 Senior Analyst, Retail/Logistics, hybrid
+// C01: Alice Tan      — CL9 Consultant, ML/Python, Banking/Tech, hybrid
+// C04: David Ng       — CL8 Associate Manager, Strategy, Banking, hybrid
+// C15: Olivia Tan     — CL7 Manager, Strategy/M&A, Banking/PE, onsite
 
 export default function LoginScreen({ onLogin }) {
-  const [role, setRole] = useState("landing"); // landing | consultant-choice | onboarding | existing | manager
+  const [role, setRole] = useState("landing"); // landing | consultant-choice | onboarding | existing | manager-choice | project-wizard | existing-project
   const [consultants, setConsultants] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedConsultantId, setSelectedConsultantId] = useState("");
@@ -19,6 +22,7 @@ export default function LoginScreen({ onLogin }) {
   const [customProfiles, setCustomProfiles] = useState(
     () => JSON.parse(sessionStorage.getItem("consultmatch_custom_profiles") || "[]")
   );
+  const [customProject, setCustomProject] = useState(null);
 
   useEffect(() => {
     axios.get(`${API}/consultants`).then(r => {
@@ -45,6 +49,12 @@ export default function LoginScreen({ onLogin }) {
   const handleManagerLogin = () => {
     const p = projects.find(p => p.manager_id === selectedManagerId);
     onLogin({ role: "manager", id: p.id, name: p.manager_name });
+  };
+
+  const handleProjectComplete = (project) => {
+    setCustomProject(project);
+    onLogin({ role: "manager", id: project.id, name: project.manager_name,
+               isCustomProject: true, project });
   };
 
   const handleOnboardingComplete = (customProfile) => {
@@ -74,7 +84,7 @@ export default function LoginScreen({ onLogin }) {
               <span className="role-title">I'm a Consultant</span>
               <span className="role-sub">Browse projects and express preferences</span>
             </button>
-            <button className="landing-role-btn" onClick={() => setRole("manager")}>
+            <button className="landing-role-btn" onClick={() => setRole("manager-choice")}>
               <span className="role-icon">📋</span>
               <span className="role-title">I'm a Project Manager</span>
               <span className="role-sub">Find the right consultant for your project</span>
@@ -188,21 +198,61 @@ export default function LoginScreen({ onLogin }) {
     );
   }
 
-  // ── Manager login ────────────────────────────────────────────────────────
-  if (role === "manager") {
-    const selectedProject = projects.find(x => x.manager_id === selectedManagerId);
+  // ── Manager: new project wizard ──────────────────────────────────────────
+  if (role === "project-wizard") {
+    return (
+      <ProjectWizard
+        onComplete={handleProjectComplete}
+        onBack={() => setRole("manager-choice")}
+      />
+    );
+  }
+
+  // ── Manager: choice screen ────────────────────────────────────────────────
+  if (role === "manager-choice") {
     return (
       <div className="login-screen">
         <div className="login-card">
           <button className="back-btn" onClick={() => setRole("landing")}>← Back</button>
           <div className="login-logo" style={{fontSize:"20px"}}>ConsultMatch</div>
-          <p className="login-tagline">Select your project</p>
+          <p className="login-tagline">How would you like to continue?</p>
+
+          <div className="choice-cards">
+            <button className="choice-card primary" onClick={() => setRole("project-wizard")}>
+              <span className="choice-icon">✨</span>
+              <span className="choice-title">New project</span>
+              <span className="choice-sub">Define your project and team composition to find the best consultants</span>
+            </button>
+            <button className="choice-card" onClick={() => setRole("existing-project")}>
+              <span className="choice-icon">📋</span>
+              <span className="choice-title">Use existing project</span>
+              <span className="choice-sub">Select from sample projects to explore the system</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Manager: existing project select ──────────────────────────────────────
+  if (role === "existing-project") {
+    const SAMPLE_PROJECT_IDS = ["P01", "P03", "P05", "P08", "P13"];
+    const sampleProjects = projects.filter(p => SAMPLE_PROJECT_IDS.includes(p.id));
+    const selectedProject = sampleProjects.find(x => x.manager_id === selectedManagerId)
+      || sampleProjects[0];
+
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <button className="back-btn" onClick={() => setRole("manager-choice")}>← Back</button>
+          <div className="login-logo" style={{fontSize:"20px"}}>ConsultMatch</div>
+          <p className="login-tagline">Select a project</p>
 
           <div className="login-field">
-            <label>Your project</label>
+            <label>Choose project</label>
             <select value={selectedManagerId}
               onChange={e => setSelectedManagerId(e.target.value)}>
-              {projects.map(p => (
+              {sampleProjects.map(p => (
                 <option key={p.manager_id} value={p.manager_id}>
                   {p.manager_name} — {p.name}
                 </option>

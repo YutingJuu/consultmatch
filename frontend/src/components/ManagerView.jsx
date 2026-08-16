@@ -4,8 +4,8 @@ import ScoreBadge from "./ScoreBadge";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
-export default function ManagerView({ projectId }) {
-  const [project, setProject] = useState(null);
+export default function ManagerView({ projectId, customProject }) {
+  const [project, setProject] = useState(customProject || null);
   const [projectRoles, setProjectRoles] = useState([]);
   const [rolesCandidates, setRolesCandidates] = useState({}); // role_id -> candidates[]
   const [proposedTeam, setProposedTeam] = useState(null);
@@ -17,24 +17,42 @@ export default function ManagerView({ projectId }) {
 
   useEffect(() => {
     setError(null);
-    axios.get(`${API}/projects/${projectId}`)
-      .then(r => setProject(r.data))
-      .catch(() => setError("Failed to load project."));
-
-    axios.get(`${API}/projects/${projectId}/roles`)
-      .then(r => {
-        setProjectRoles(r.data);
-        // Load candidates for each role
-        r.data.forEach(role => {
-          axios.get(`${API}/roles/${role.role_id}/candidates`)
-            .then(res => setRolesCandidates(prev => ({
-              ...prev, [role.role_id]: res.data
-            })))
-            .catch(() => {});
-        });
-      })
-      .catch(() => setError("Failed to load roles."));
-  }, [projectId]);
+    if (customProject) {
+      // Custom project — score all consultants against each slot client-side via batch
+      setProject(customProject);
+      const slots = customProject.team_slots || [];
+      setProjectRoles(slots.map(s => ({ ...s, ...customProject })));
+      // Fetch candidates for each slot from backend
+      slots.forEach(slot => {
+        // Use role_id if registered, else fetch all consultants and filter by CL
+        axios.get(`${API}/consultants`)
+          .then(r => {
+            const consultants = r.data;
+            const [cl_min, cl_max] = slot.cl_range;
+            const eligible = consultants
+              .filter(c => c.cl >= cl_min && c.cl <= cl_max)
+              .map(c => ({ ...c, score: null, has_applied: false, has_liked: false }));
+            setRolesCandidates(prev => ({ ...prev, [slot.slot_id]: eligible }));
+          });
+      });
+    } else {
+      axios.get(`${API}/projects/${projectId}`)
+        .then(r => setProject(r.data))
+        .catch(() => setError("Failed to load project."));
+      axios.get(`${API}/projects/${projectId}/roles`)
+        .then(r => {
+          setProjectRoles(r.data);
+          r.data.forEach(role => {
+            axios.get(`${API}/roles/${role.role_id}/candidates`)
+              .then(res => setRolesCandidates(prev => ({
+                ...prev, [role.role_id]: res.data
+              })))
+              .catch(() => {});
+          });
+        })
+        .catch(() => setError("Failed to load roles."));
+    }
+  }, [projectId, customProject]);
 
   const proposeTeam = async () => {
     setProposing(true);

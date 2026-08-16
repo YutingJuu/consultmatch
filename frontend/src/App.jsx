@@ -57,7 +57,10 @@ export default function App() {
             customProfile={session.isCustom ? session.profile : null}
           />
         ) : (
-          <ManagerView projectId={session.id} />
+          <ManagerView
+            projectId={session.id}
+            customProject={session.isCustomProject ? session.project : null}
+          />
         )}
       </main>
 
