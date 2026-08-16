@@ -18,22 +18,46 @@ export default function ManagerView({ projectId, customProject }) {
   useEffect(() => {
     setError(null);
     if (customProject) {
-      // Custom project — score all consultants against each slot client-side via batch
       setProject(customProject);
       const slots = customProject.team_slots || [];
-      setProjectRoles(slots.map(s => ({ ...s, ...customProject })));
-      // Fetch candidates for each slot from backend
-      slots.forEach(slot => {
-        // Use role_id if registered, else fetch all consultants and filter by CL
-        axios.get(`${API}/consultants`)
-          .then(r => {
-            const consultants = r.data;
-            const [cl_min, cl_max] = slot.cl_range;
-            const eligible = consultants
-              .filter(c => c.cl >= cl_min && c.cl <= cl_max)
-              .map(c => ({ ...c, score: null, has_applied: false, has_liked: false }));
-            setRolesCandidates(prev => ({ ...prev, [slot.slot_id]: eligible }));
-          });
+      // Build role objects that look like backend roles
+      const roles = slots.map(s => ({
+        ...s,
+        project_id: customProject.id,
+        project_name: customProject.name,
+        client: customProject.client,
+        industry: customProject.industry,
+        wfh_policy: customProject.wfh_policy,
+        duration: customProject.duration,
+        district: customProject.district,
+        preferred_work_style: customProject.preferred_work_style || "structured",
+      }));
+      setProjectRoles(roles);
+
+      // Fetch all consultants, then score each against each slot via batch endpoint
+      axios.get(`${API}/consultants`).then(async r => {
+        const allConsultants = r.data;
+        for (const slot of slots) {
+          const [cl_min, cl_max] = slot.cl_range;
+          const eligible = allConsultants.filter(c => c.cl >= cl_min && c.cl <= cl_max);
+
+          // Score each eligible consultant against this slot using inline scoring
+          const roleForScoring = roles.find(ro => ro.slot_id === slot.slot_id);
+          const scored = await Promise.all(eligible.map(async c => {
+            try {
+              const res = await axios.post(`${API}/score/inline`, {
+                consultant_id: c.id,
+                role: roleForScoring,
+              });
+              return { ...c, score: res.data, has_applied: false, has_liked: false };
+            } catch {
+              return { ...c, score: { total: 20, breakdown: { skills: 0, preference: 0, cl: 20 } },
+                        has_applied: false, has_liked: false };
+            }
+          }));
+          scored.sort((a, b) => b.score.total - a.score.total);
+          setRolesCandidates(prev => ({ ...prev, [slot.slot_id]: scored }));
+        }
       });
     } else {
       axios.get(`${API}/projects/${projectId}`)
