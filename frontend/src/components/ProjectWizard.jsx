@@ -250,36 +250,26 @@ export default function ProjectWizard({ onComplete, onBack }) {
                 </div>
 
                 <div className="form-field">
-                  <label>Career level range</label>
-                  <div className="cl-range-row">
-                    <div className="cl-range-side">
-                      <span className="cl-range-label">Most Senior</span>
-                      <div className="option-cards" style={{flexDirection:"column",gap:"4px"}}>
-                        {CL_OPTIONS.map(o => (
-                          <button key={o.cl}
-                            className={`option-card ${newSlot.cl_min === o.cl ? "active" : ""}`}
-                            style={{padding:"6px 10px",minWidth:"unset",fontSize:"12px"}}
-                            onClick={() => setNewSlot(s => ({ ...s, cl_min: o.cl }))}>
-                            {o.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="cl-range-divider">↕</div>
-                    <div className="cl-range-side">
-                      <span className="cl-range-label">Most Junior</span>
-                      <div className="option-cards" style={{flexDirection:"column",gap:"4px"}}>
-                        {CL_OPTIONS.map(o => (
-                          <button key={o.cl}
-                            className={`option-card ${newSlot.cl_max === o.cl ? "active" : ""}`}
-                            style={{padding:"6px 10px",minWidth:"unset",fontSize:"12px"}}
-                            onClick={() => setNewSlot(s => ({ ...s, cl_max: o.cl }))}>
-                            {o.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  <label>Acceptable career levels</label>
+                  <div className="cl-bubble-row">
+                    {CL_OPTIONS.map(o => (
+                      <button key={o.cl}
+                        className={`cl-bubble ${newSlot.cl_selected.includes(o.cl) ? "active" : ""}`}
+                        onClick={() => setNewSlot(s => ({
+                          ...s,
+                          cl_selected: s.cl_selected.includes(o.cl)
+                            ? s.cl_selected.filter(c => c !== o.cl)
+                            : [...s.cl_selected, o.cl]
+                        }))}>
+                        {o.label}
+                      </button>
+                    ))}
                   </div>
+                  {newSlot.cl_selected.length === 0 && (
+                    <p style={{fontSize:"12px",color:"#ef4444",marginTop:"6px"}}>
+                      Please select at least one career level.
+                    </p>
+                  )}
                 </div>
 
                 <div className="form-field">
