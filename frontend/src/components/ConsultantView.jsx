@@ -20,7 +20,13 @@ export default function ConsultantView({ consultantId, customProfile }) {
   useEffect(() => {
     if (isCustom) {
       setProfile(customProfile);
-      axios.get(`${API}/roles`).then(r => setRoles(r.data));
+      axios.get(`${API}/roles`).then(r => {
+        const cl = customProfile?.cl || 9;
+        const eligible = r.data.filter(role =>
+          role.cl_range[0] <= cl && cl <= role.cl_range[1]
+        );
+        setRoles(eligible);
+      });
     } else {
       axios.get(`${API}/consultants/${consultantId}`).then(r => setProfile(r.data));
       axios.get(`${API}/consultants/${consultantId}/recommendations`).then(r => {
@@ -34,15 +40,13 @@ export default function ConsultantView({ consultantId, customProfile }) {
   const unlockScores = async () => {
     setLoadingScores(true);
     try {
-      const scored = await Promise.all(
-        roles.map(async role => {
-          const r = await axios.post(`${API}/score/custom`,
-            { consultant: customProfile, role_id: role.role_id });
-          return { ...role, score: r.data };
-        })
-      );
-      setRecommendations(scored.sort((a,b) => b.score.total - a.score.total));
+      // Single batch call instead of N individual calls
+      const r = await axios.post(`${API}/score/custom/batch`,
+        { consultant: customProfile });
+      setRecommendations(r.data);
       setScoresUnlocked(true);
+    } catch (e) {
+      console.error("Failed to unlock scores", e);
     } finally { setLoadingScores(false); }
   };
 

@@ -94,7 +94,9 @@ def get_consultant(consultant_id: str):
 def get_recommendations(consultant_id: str):
     c = get_c_lookup().get(consultant_id)
     if not c: raise HTTPException(404, "Not found")
-    return rank_roles_for_consultant(c, ROLES)
+    c_cl = c.get("cl", 9)
+    eligible_roles = [r for r in ROLES if r["cl_range"][0] <= c_cl <= r["cl_range"][1]]
+    return rank_roles_for_consultant(c, eligible_roles)
 
 
 # ── Roles ─────────────────────────────────────────────────────
@@ -335,3 +337,20 @@ def reset_state():
     _applications.clear()
     _likes.clear()
     return {"status": "reset"}
+
+
+# ── Batch scoring ─────────────────────────────────────────────
+class BatchScoreRequest(BaseModel):
+    consultant: dict
+
+@app.post("/score/custom/batch")
+def batch_score_custom(request: BatchScoreRequest):
+    """Score a custom consultant against eligible roles (CL-filtered) in one call."""
+    c_cl = request.consultant.get("cl", 9)
+    eligible_roles = [r for r in ROLES if r["cl_range"][0] <= c_cl <= r["cl_range"][1]]
+    results = []
+    for role in eligible_roles:
+        score = compute_score(request.consultant, role)
+        results.append({**role, "score": score})
+    results.sort(key=lambda x: x["score"]["total"], reverse=True)
+    return results
