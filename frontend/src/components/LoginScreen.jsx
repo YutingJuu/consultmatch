@@ -4,17 +4,30 @@ import OnboardingWizard from "./OnboardingWizard";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
+// 3 curated sample profiles — diverse CL, background, preferences
+const SAMPLE_IDS = ["C01", "C08", "C15"];
+// C01: Alice Tan — CL9 Consultant, ML/Python, Banking/Tech, hybrid
+// C08: Henry Ong — CL9 Consultant, Cybersecurity, Banking/Gov, structured
+// C15: Olivia Tan — CL7 Senior Manager, Strategy/M&A, Banking/PE, onsite
+
 export default function LoginScreen({ onLogin }) {
   const [role, setRole] = useState("landing"); // landing | consultant-choice | onboarding | existing | manager
   const [consultants, setConsultants] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedConsultantId, setSelectedConsultantId] = useState("");
   const [selectedManagerId, setSelectedManagerId] = useState("");
+  const [customProfiles, setCustomProfiles] = useState(
+    () => JSON.parse(sessionStorage.getItem("consultmatch_custom_profiles") || "[]")
+  );
 
   useEffect(() => {
     axios.get(`${API}/consultants`).then(r => {
-      setConsultants(r.data);
-      if (r.data.length > 0) setSelectedConsultantId(r.data[0].id);
+      const samples = r.data.filter(c => SAMPLE_IDS.includes(c.id));
+      setConsultants(samples);
+      // Default to first custom profile if exists, else first sample
+      const saved = JSON.parse(sessionStorage.getItem("consultmatch_custom_profiles") || "[]");
+      if (saved.length > 0) setSelectedConsultantId(saved[0].id);
+      else if (samples.length > 0) setSelectedConsultantId(samples[0].id);
     });
     axios.get(`${API}/projects`).then(r => {
       setProjects(r.data);
@@ -23,8 +36,10 @@ export default function LoginScreen({ onLogin }) {
   }, []);
 
   const handleExistingLogin = () => {
-    const c = consultants.find(c => c.id === selectedConsultantId);
-    onLogin({ role: "consultant", id: c.id, name: c.name, isCustom: false });
+    const c = [...customProfiles, ...consultants].find(c => c.id === selectedConsultantId);
+    const isCustom = customProfiles.some(p => p.id === c.id);
+    onLogin({ role: "consultant", id: c.id, name: c.name,
+              isCustom, profile: isCustom ? c : null });
   };
 
   const handleManagerLogin = () => {
@@ -33,6 +48,11 @@ export default function LoginScreen({ onLogin }) {
   };
 
   const handleOnboardingComplete = (customProfile) => {
+    // Save to sessionStorage so it persists within the session
+    const saved = JSON.parse(sessionStorage.getItem("consultmatch_custom_profiles") || "[]");
+    const updated = [customProfile, ...saved.filter(p => p.id !== customProfile.id)];
+    sessionStorage.setItem("consultmatch_custom_profiles", JSON.stringify(updated));
+    setCustomProfiles(updated);
     onLogin({ role: "consultant", id: customProfile.id, name: customProfile.name,
                isCustom: true, profile: customProfile });
   };
@@ -115,23 +135,46 @@ export default function LoginScreen({ onLogin }) {
             <label>Choose profile</label>
             <select value={selectedConsultantId}
               onChange={e => setSelectedConsultantId(e.target.value)}>
-              {consultants.map(c => (
-                <option key={c.id} value={c.id}>{c.name} (CL{c.cl} {c.cl_title})</option>
-              ))}
+              {customProfiles.length > 0 && (
+                <optgroup label="Your Profiles">
+                  {customProfiles.map(c => (
+                    <option key={c.id} value={c.id}>
+                      ✨ {c.name} (CL{c.cl} {c.cl_title})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Sample Profiles">
+                {consultants.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} (CL{c.cl} {c.cl_title})</option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
           {selectedConsultantId && (() => {
-            const c = consultants.find(x => x.id === selectedConsultantId);
+            const c = [...customProfiles, ...consultants].find(x => x.id === selectedConsultantId);
             if (!c) return null;
             return (
               <div className="profile-preview">
-                <div className="preview-row"><span>Level</span><strong>CL{c.cl} {c.cl_title}</strong></div>
-                <div className="preview-row"><span>Industries</span><strong>{c.preferred_industries.join(", ")}</strong></div>
-                <div className="preview-row"><span>WFH</span><strong>{c.wfh_preference}</strong></div>
-                <div className="preview-row"><span>Goal</span><strong>{c.career_goal.replace("_"," ")}</strong></div>
+                <div className="preview-row">
+                  <span>Level</span>
+                  <strong>CL{c.cl} {c.cl_title}</strong>
+                </div>
+                <div className="preview-row">
+                  <span>Industries</span>
+                  <strong>{c.preferred_industries?.join(", ") || "—"}</strong>
+                </div>
+                <div className="preview-row">
+                  <span>WFH</span>
+                  <strong>{c.wfh_preference}</strong>
+                </div>
+                <div className="preview-row">
+                  <span>Goal</span>
+                  <strong>{c.career_goal?.replace("_"," ") || "—"}</strong>
+                </div>
                 <div className="preview-skills">
-                  {c.skills.map(s => <span key={s} className="skill-chip">{s}</span>)}
+                  {c.skills?.map(s => <span key={s} className="skill-chip">{s}</span>)}
                 </div>
               </div>
             );
