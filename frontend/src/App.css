@@ -690,3 +690,186 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 .proximity-badge {
   font-size: 12px; font-weight: 600;
 }
+
+/* ── Tailor mode badge ─────────────────────────────────────── */
+.tailor-mode-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px;
+  border-radius: 10px; background: #1e293b; color: white;
+  white-space: nowrap; align-self: flex-start; flex-shrink: 0;
+}
+
+/* ── CL tag ────────────────────────────────────────────────── */
+.cl-tag { background: #1e293b; color: white; font-weight: 700; }
+
+/* ── Like button ───────────────────────────────────────────── */
+.card-top-right { display: flex; align-items: flex-start; gap: 8px; }
+.like-btn {
+  background: none; border: none; font-size: 20px; cursor: pointer;
+  padding: 4px; line-height: 1; transition: transform .15s;
+}
+.like-btn:hover { transform: scale(1.2); }
+.liked-card { border-color: #fda4af !important; background: #fff1f2; }
+
+/* ── Slot chips ────────────────────────────────────────────── */
+.slot-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.slot-chip {
+  font-size: 11px; padding: 3px 10px; border-radius: 20px;
+  background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; font-weight: 600;
+}
+.slot-chip-lg {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; padding: 5px 12px; border-radius: 8px;
+  background: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b;
+}
+.slot-cl { font-size: 11px; color: #64748b; }
+
+/* ── Applied badge ─────────────────────────────────────────── */
+.applied-badge {
+  font-size: 13px; color: #16a34a; font-weight: 600;
+  padding: 7px 0;
+}
+.card-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+
+/* ── Applications panel ────────────────────────────────────── */
+.applications-panel { display: flex; flex-direction: column; gap: 14px; }
+.application-card {
+  background: white; border-radius: 12px; padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+}
+.application-header {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; margin-bottom: 8px;
+}
+.application-header strong { display: block; font-size: 15px; margin-bottom: 3px; }
+.application-meta { display: flex; gap: 16px; font-size: 12px;
+  color: #64748b; margin-bottom: 14px; }
+.status-pill {
+  font-size: 12px; font-weight: 700; padding: 4px 10px;
+  border-radius: 20px; white-space: nowrap;
+}
+.application-timeline {
+  display: flex; gap: 0; align-items: center;
+}
+.timeline-step {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; flex: 1; position: relative;
+}
+.timeline-step::after {
+  content: ""; position: absolute; top: 8px; left: 50%;
+  width: 100%; height: 2px; background: #e2e8f0; z-index: 0;
+}
+.timeline-step:last-child::after { display: none; }
+.timeline-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #e2e8f0; border: 2px solid #e2e8f0;
+  position: relative; z-index: 1;
+}
+.timeline-step.done .timeline-dot { background: #3b82f6; border-color: #3b82f6; }
+.timeline-step.current .timeline-dot { background: white; border-color: #3b82f6;
+  box-shadow: 0 0 0 3px #bfdbfe; }
+.timeline-step span { font-size: 11px; color: #94a3b8; }
+.timeline-step.done span, .timeline-step.current span { color: #3b82f6; font-weight: 600; }
+.not-selected-note {
+  font-size: 12px; color: #94a3b8; font-style: italic; margin-top: 10px;
+}
+
+/* ── Empty state ───────────────────────────────────────────── */
+.empty-state {
+  text-align: center; padding: 48px 20px; color: #94a3b8;
+}
+.empty-state p:first-child { font-size: 40px; margin-bottom: 8px; }
+.empty-state p { font-size: 14px; margin-bottom: 4px; }
+
+/* ── Team composition ──────────────────────────────────────── */
+.team-composition {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-top: 10px;
+}
+.team-comp-label { font-size: 12px; font-weight: 700;
+  color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+
+/* ── Propose bar ───────────────────────────────────────────── */
+.propose-bar {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  border-radius: 12px; padding: 18px 20px; color: white;
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+}
+.propose-bar strong { display: block; font-size: 15px; margin-bottom: 4px; }
+.propose-bar p { font-size: 13px; color: #94a3b8; margin: 0; }
+.propose-btn {
+  padding: 10px 22px; background: #3b82f6; color: white; border: none;
+  border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: background .15s; flex-shrink: 0;
+}
+.propose-btn:hover { background: #2563eb; }
+.propose-btn:disabled { background: #475569; cursor: not-allowed; }
+
+/* ── Slot section ──────────────────────────────────────────── */
+.slots-container { display: flex; flex-direction: column; gap: 20px; }
+.slot-section { background: white; border-radius: 12px;
+  border: 1px solid #e2e8f0; overflow: hidden; }
+.slot-header {
+  background: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.slot-title { font-size: 15px; font-weight: 700; color: #1e293b; margin-right: 8px; }
+.slot-cl-badge {
+  font-size: 11px; background: #1e293b; color: white;
+  padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-right: 6px;
+}
+.slot-count-badge {
+  font-size: 11px; background: #eff6ff; color: #1d4ed8;
+  padding: 2px 8px; border-radius: 10px; font-weight: 700;
+}
+
+/* ── Candidate cards ───────────────────────────────────────── */
+.candidate-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.candidate-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; background: #f8fafc; border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+.candidate-rank { font-size: 14px; font-weight: 800; color: #3b82f6;
+  min-width: 24px; padding-top: 2px; }
+.candidate-info { flex: 1; }
+.candidate-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.candidate-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.view-cv-btn {
+  padding: 5px 12px; background: white; border: 1.5px solid #3b82f6;
+  border-radius: 6px; color: #3b82f6; font-size: 12px; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+}
+.view-cv-btn:hover { background: #eff6ff; }
+
+/* ── Signal badges ─────────────────────────────────────────── */
+.signal-badge {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+}
+.signal-badge.applied { background: #dcfce7; color: #15803d; }
+.signal-badge.liked { background: #fce7f3; color: #be185d; }
+
+/* ── Proposed team ─────────────────────────────────────────── */
+.proposed-team { display: flex; flex-direction: column; gap: 16px; }
+.proposed-note {
+  display: flex; gap: 12px; background: #eff6ff; border: 1px solid #bfdbfe;
+  border-radius: 10px; padding: 14px 16px; font-size: 13px;
+}
+.proposed-note strong { display: block; color: #1d4ed8; margin-bottom: 4px; }
+.proposed-note p { color: #475569; margin: 0; }
+.proposed-slot { background: white; border-radius: 12px;
+  border: 1px solid #e2e8f0; overflow: hidden; }
+.proposed-card {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+}
+.proposed-rank { font-size: 14px; font-weight: 800; color: #16a34a; min-width: 24px; }
+.proposed-info { flex: 1; }
+.proposed-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+
+/* ── CV display ────────────────────────────────────────────── */
+.cv-display {
+  font-size: 12px; font-family: monospace; white-space: pre-wrap;
+  line-height: 1.6; color: #1e293b; background: #f8fafc;
+  padding: 14px; border-radius: 8px;
+}

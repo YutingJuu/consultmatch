@@ -1,143 +1,75 @@
 """
-scoring.py
-Preference-compatibility scoring between consultants and projects.
-
-Score breakdown (0-100):
-  - Skills match:          40 points
-  - Preference alignment:  40 points
-      * Industry match:    10 pts
-      * WFH match:         10 pts
-      * Work style match:  10 pts
-      * Duration match:    10 pts
-  - Seniority fit:         20 points
+scoring.py — compatibility scoring using real Accenture CL levels
+Score (0-100): Skills 40pts | Preferences 40pts | CL fit 20pts
 """
 
-from typing import Any
+WEIGHTS = {"skills": 0.40, "preference": 0.40, "cl": 0.20}
+PREF_W  = {"industry": 0.25, "wfh": 0.25, "work_style": 0.25, "duration": 0.25}
 
-WEIGHTS = {
-    "skills": 0.40,
-    "preference": 0.40,
-    "seniority": 0.20,
+WFH_COMPAT = {
+    ("remote","remote"):1.0,("hybrid","hybrid"):1.0,("onsite","onsite"):1.0,
+    ("remote","hybrid"):0.5,("hybrid","remote"):0.5,
+    ("hybrid","onsite"):0.5,("onsite","hybrid"):0.5,
+    ("remote","onsite"):0.0,("onsite","remote"):0.0,
 }
 
-PREFERENCE_WEIGHTS = {
-    "industry": 0.25,
-    "wfh": 0.25,
-    "work_style": 0.25,
-    "duration": 0.25,
-}
+def score_skills(c, p):
+    cs = set(s.lower() for s in c.get("skills",[]))
+    ps = set(s.lower() for s in p.get("required_skills",[]))
+    if not ps: return 0.0
+    return len(cs & ps) / len(ps)
 
+def score_cl(c, p):
+    """Score CL fit against slot range (if project has slots) or seniority_required."""
+    c_cl = c.get("cl", 9)
+    slots = p.get("team_slots", [])
+    if slots:
+        # Best fit across any slot
+        best = 0.0
+        for slot in slots:
+            lo, hi = slot["cl_range"]
+            if lo <= c_cl <= hi:
+                best = 1.0; break
+            elif c_cl == lo - 1 or c_cl == hi + 1:
+                best = max(best, 0.5)
+        return best
+    else:
+        req = p.get("seniority_required", 9)
+        diff = abs(c_cl - req)
+        return 1.0 if diff == 0 else (0.5 if diff <= 1 else 0.0)
 
-def score_skills(consultant: dict, project: dict) -> float:
-    """Jaccard-style overlap between consultant skills and project required skills."""
-    c_skills = set(s.lower() for s in consultant["skills"])
-    p_skills = set(s.lower() for s in project["required_skills"])
-    if not p_skills:
-        return 0.0
-    overlap = len(c_skills & p_skills)
-    return overlap / len(p_skills)
-
-
-def score_seniority(consultant: dict, project: dict) -> float:
-    """
-    Exact match = 1.0
-    One level off = 0.5
-    Two or more levels off = 0.0
-    """
-    diff = abs(consultant["seniority"] - project["seniority_required"])
-    if diff == 0:
-        return 1.0
-    elif diff <= 2:
-        return 0.5
-    return 0.0
-
-
-def score_preferences(consultant: dict, project: dict) -> float:
-    """Aggregate preference alignment score."""
-    scores = {}
-
-    # Industry match
-    scores["industry"] = (
-        1.0 if project["industry"] in consultant["preferred_industries"] else 0.0
-    )
-
-    # WFH match
-    wfh_compatibility = {
-        ("remote", "remote"): 1.0,
-        ("hybrid", "hybrid"): 1.0,
-        ("onsite", "onsite"): 1.0,
-        ("remote", "hybrid"): 0.5,
-        ("hybrid", "remote"): 0.5,
-        ("hybrid", "onsite"): 0.5,
-        ("onsite", "hybrid"): 0.5,
-        ("remote", "onsite"): 0.0,
-        ("onsite", "remote"): 0.0,
+def score_preferences(c, p):
+    scores = {
+        "industry": 1.0 if p.get("industry") in c.get("preferred_industries",[]) else 0.0,
+        "wfh": WFH_COMPAT.get((c.get("wfh_preference","hybrid"), p.get("wfh_policy","hybrid")), 0.0),
+        "work_style": 1.0 if c.get("work_style") == p.get("preferred_work_style") else 0.3,
+        "duration": 1.0 if c.get("preferred_duration") == p.get("duration") else 0.2,
     }
-    key = (consultant["wfh_preference"], project["wfh_policy"])
-    scores["wfh"] = wfh_compatibility.get(key, 0.0)
+    return sum(PREF_W[k] * scores[k] for k in scores)
 
-    # Work style match
-    scores["work_style"] = (
-        1.0 if consultant["work_style"] == project["preferred_work_style"] else 0.3
-    )
-
-    # Duration match
-    scores["duration"] = (
-        1.0 if consultant["preferred_duration"] == project["duration"] else 0.2
-    )
-
-    return sum(
-        PREFERENCE_WEIGHTS[k] * scores[k] for k in scores
-    )
-
-
-def compute_score(consultant: dict, project: dict) -> dict:
-    """
-    Compute full compatibility score between one consultant and one project.
-    Returns a dict with total score and breakdown.
-    """
-    skills_raw = score_skills(consultant, project)
-    seniority_raw = score_seniority(consultant, project)
-    preference_raw = score_preferences(consultant, project)
-
-    skills_score = round(skills_raw * 100 * WEIGHTS["skills"], 1)
-    seniority_score = round(seniority_raw * 100 * WEIGHTS["seniority"], 1)
-    preference_score = round(preference_raw * 100 * WEIGHTS["preference"], 1)
-    total = round(skills_score + seniority_score + preference_score, 1)
-
-    matched_skills = list(
-        set(s.lower() for s in consultant["skills"])
-        & set(s.lower() for s in project["required_skills"])
-    )
-
+def compute_score(c, p):
+    sk = score_skills(c, p);  cl = score_cl(c, p);  pr = score_preferences(c, p)
+    breakdown = {
+        "skills":     round(sk * 100 * WEIGHTS["skills"], 1),
+        "cl":         round(cl * 100 * WEIGHTS["cl"], 1),
+        "preference": round(pr * 100 * WEIGHTS["preference"], 1),
+    }
+    total = round(sum(breakdown.values()), 1)
+    cs = set(s.lower() for s in c.get("skills",[]))
+    ps = set(s.lower() for s in p.get("required_skills",[]))
     return {
-        "total": total,
-        "breakdown": {
-            "skills": skills_score,
-            "seniority": seniority_score,
-            "preference": preference_score,
-        },
-        "matched_skills": matched_skills,
-        "industry_match": project["industry"] in consultant["preferred_industries"],
-        "wfh_match": consultant["wfh_preference"] == project["wfh_policy"],
-        "style_match": consultant["work_style"] == project["preferred_work_style"],
-        "duration_match": consultant["preferred_duration"] == project["duration"],
+        "total": total, "breakdown": breakdown,
+        "matched_skills": list(cs & ps),
+        "industry_match": p.get("industry") in c.get("preferred_industries",[]),
+        "wfh_match": c.get("wfh_preference") == p.get("wfh_policy"),
+        "style_match": c.get("work_style") == p.get("preferred_work_style"),
+        "duration_match": c.get("preferred_duration") == p.get("duration"),
     }
 
+def rank_projects_for_consultant(c, projects):
+    return sorted([{**p, "score": compute_score(c, p)} for p in projects],
+                  key=lambda x: x["score"]["total"], reverse=True)
 
-def rank_projects_for_consultant(consultant: dict, projects: list) -> list:
-    """Return projects ranked by compatibility score for a given consultant."""
-    scored = []
-    for p in projects:
-        result = compute_score(consultant, p)
-        scored.append({**p, "score": result})
-    return sorted(scored, key=lambda x: x["score"]["total"], reverse=True)
-
-
-def rank_consultants_for_project(project: dict, consultants: list) -> list:
-    """Return consultants ranked by compatibility score for a given project."""
-    scored = []
-    for c in consultants:
-        result = compute_score(c, project)
-        scored.append({**c, "score": result})
-    return sorted(scored, key=lambda x: x["score"]["total"], reverse=True)
+def rank_consultants_for_project(p, consultants):
+    return sorted([{**c, "score": compute_score(c, p)} for c in consultants],
+                  key=lambda x: x["score"]["total"], reverse=True)

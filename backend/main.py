@@ -1,98 +1,81 @@
 """
-main.py
-ConsultMatch FastAPI backend.
-
-Run with:
-    uvicorn main:app --reload --port 8000
+ConsultMatch FastAPI backend — v12
 """
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-import os
+import os, httpx
 
 from data.synthetic import CONSULTANTS, PROJECTS
-from scoring import (
-    compute_score,
-    rank_projects_for_consultant,
-    rank_consultants_for_project,
-)
+from scoring import compute_score, rank_projects_for_consultant, rank_consultants_for_project
 from matching import gale_shapley, build_preference_lists
 
-app = FastAPI(title="ConsultMatch API", version="1.0.0")
-
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://consultmatch.vercel.app",
-    "https://consultmatch-xi.vercel.app",
-    "https://consultmatch-git-main.vercel.app",
-]
+app = FastAPI(title="ConsultMatch API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://consultmatch.vercel.app",
+        "https://consultmatch-xi.vercel.app",
+    ],
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ── In-memory state ───────────────────────────────────────────────────────────
-_consultant_rankings: dict[str, list[str]] = {}
-_project_rankings: dict[str, list[str]] = {}
+# ── In-memory state ───────────────────────────────────────────
+_custom_consultants: dict[str, dict] = {}
+_applications: dict[str, list] = {}   # consultant_id -> [{project_id, status, cv_text, applied_at}]
+_likes: dict[str, list] = {}          # consultant_id -> [project_id, ...]
 _match_results: Optional[dict] = None
-_custom_consultants: dict[str, dict] = {}   # stores onboarded custom profiles
 
-# Base lookups (synthetic data)
-_c_lookup: dict[str, dict] = {c["id"]: c for c in CONSULTANTS}
-_p_lookup: dict[str, dict] = {p["id"]: p for p in PROJECTS}
+_p_lookup = {p["id"]: p for p in PROJECTS}
 
-
-def get_all_consultants() -> list[dict]:
-    """Synthetic + any registered custom consultants."""
+def get_all_consultants():
     return CONSULTANTS + list(_custom_consultants.values())
 
+def get_c_lookup():
+    return {c["id"]: c for c in get_all_consultants()}
 
-def get_c_lookup() -> dict[str, dict]:
-    return {**_c_lookup, **_custom_consultants}
 
-
-# ── Request models ────────────────────────────────────────────────────────────
-
-class RankingSubmission(BaseModel):
-    id: str
-    ranked_ids: list[str]
-
+# ── Models ────────────────────────────────────────────────────
 class CustomProfile(BaseModel):
-    id: str
-    name: str
-    level: str
-    seniority: int
-    skills: list[str]
-    preferred_industries: list[str]
-    wfh_preference: str
-    work_style: str
-    preferred_duration: str
-    career_goal: str
+    id: str; name: str; cl: int; cl_title: str
+    skills: list[str]; preferred_industries: list[str]
+    wfh_preference: str; work_style: str
+    preferred_duration: str; career_goal: str
     available_from: str
+    cvText: Optional[str] = ""
+    cvFileName: Optional[str] = ""
+
+class ApplicationRequest(BaseModel):
+    consultant_id: str; project_id: str
+    cv_text: Optional[str] = ""
+
+class LikeRequest(BaseModel):
+    consultant_id: str; project_id: str
 
 class CustomScoreRequest(BaseModel):
-    consultant: dict
-    project_id: str
+    consultant: dict; project_id: str
+
+class TailorRequest(BaseModel):
+    cv_text: str; project_id: str
+
+class StatusUpdate(BaseModel):
+    consultant_id: str; project_id: str; status: str
 
 
-# ── Custom profile registration ───────────────────────────────────────────────
-
+# ── Custom profile ────────────────────────────────────────────
 @app.post("/consultants/register")
 def register_custom_consultant(profile: CustomProfile):
-    """Register an onboarded consultant so they participate in matching."""
     _custom_consultants[profile.id] = profile.model_dump()
     return {"status": "registered", "id": profile.id}
 
 
-# ── Consultant endpoints ──────────────────────────────────────────────────────
-
+# ── Consultants ───────────────────────────────────────────────
 @app.get("/consultants")
 def list_consultants():
     return get_all_consultants()
@@ -100,34 +83,92 @@ def list_consultants():
 @app.get("/consultants/{consultant_id}")
 def get_consultant(consultant_id: str):
     c = get_c_lookup().get(consultant_id)
-    if not c:
-        raise HTTPException(status_code=404, detail="Consultant not found")
+    if not c: raise HTTPException(404, "Not found")
     return c
 
 @app.get("/consultants/{consultant_id}/recommendations")
-def get_project_recommendations(consultant_id: str):
+def get_recommendations(consultant_id: str):
     c = get_c_lookup().get(consultant_id)
-    if not c:
-        raise HTTPException(status_code=404, detail="Consultant not found")
+    if not c: raise HTTPException(404, "Not found")
     return rank_projects_for_consultant(c, PROJECTS)
 
-@app.post("/consultants/rankings")
-def submit_consultant_ranking(submission: RankingSubmission):
-    if submission.id not in get_c_lookup():
-        raise HTTPException(status_code=404, detail="Consultant not found")
-    _consultant_rankings[submission.id] = submission.ranked_ids
-    return {"status": "ok", "consultant_id": submission.id}
 
-@app.get("/consultants/{consultant_id}/rankings")
-def get_consultant_ranking(consultant_id: str):
-    return {
-        "consultant_id": consultant_id,
-        "ranked_ids": _consultant_rankings.get(consultant_id, [])
-    }
+# ── Likes ─────────────────────────────────────────────────────
+@app.post("/likes")
+def toggle_like(req: LikeRequest):
+    liked = _likes.setdefault(req.consultant_id, [])
+    if req.project_id in liked:
+        liked.remove(req.project_id)
+        return {"status": "unliked"}
+    else:
+        liked.append(req.project_id)
+        return {"status": "liked"}
+
+@app.get("/likes/{consultant_id}")
+def get_likes(consultant_id: str):
+    return {"liked": _likes.get(consultant_id, [])}
 
 
-# ── Project endpoints ─────────────────────────────────────────────────────────
+# ── Applications ──────────────────────────────────────────────
+@app.post("/applications")
+def apply_to_project(req: ApplicationRequest):
+    apps = _applications.setdefault(req.consultant_id, [])
+    # Check not already applied
+    if any(a["project_id"] == req.project_id for a in apps):
+        raise HTTPException(400, "Already applied to this project")
+    from datetime import datetime
+    apps.append({
+        "project_id": req.project_id,
+        "status": "Applied",
+        "cv_text": req.cv_text,
+        "applied_at": datetime.utcnow().isoformat(),
+    })
+    return {"status": "ok"}
 
+@app.get("/applications/{consultant_id}")
+def get_applications(consultant_id: str):
+    apps = _applications.get(consultant_id, [])
+    enriched = []
+    for a in apps:
+        p = _p_lookup.get(a["project_id"])
+        if p:
+            enriched.append({**a, "project_name": p["name"],
+                             "client": p["client"], "industry": p["industry"],
+                             "district": p.get("district","Singapore")})
+    return enriched
+
+@app.patch("/applications/status")
+def update_application_status(req: StatusUpdate):
+    """Manager updates applicant status."""
+    apps = _applications.get(req.consultant_id, [])
+    for a in apps:
+        if a["project_id"] == req.project_id:
+            a["status"] = req.status
+            return {"status": "updated"}
+    raise HTTPException(404, "Application not found")
+
+@app.get("/applications/project/{project_id}")
+def get_project_applicants(project_id: str):
+    """Get all applicants for a project (manager view)."""
+    result = []
+    for cid, apps in _applications.items():
+        for a in apps:
+            if a["project_id"] == project_id:
+                c = get_c_lookup().get(cid)
+                if c:
+                    result.append({
+                        "consultant_id": cid,
+                        "consultant_name": c["name"],
+                        "cl": c.get("cl"), "cl_title": c.get("cl_title"),
+                        "skills": c.get("skills",[]),
+                        "status": a["status"],
+                        "cv_text": a.get("cv_text",""),
+                        "applied_at": a["applied_at"],
+                    })
+    return result
+
+
+# ── Projects ──────────────────────────────────────────────────
 @app.get("/projects")
 def list_projects():
     return PROJECTS
@@ -135,124 +176,176 @@ def list_projects():
 @app.get("/projects/{project_id}")
 def get_project(project_id: str):
     p = _p_lookup.get(project_id)
-    if not p:
-        raise HTTPException(status_code=404, detail="Project not found")
+    if not p: raise HTTPException(404, "Not found")
     return p
 
-@app.get("/projects/{project_id}/recommendations")
-def get_consultant_recommendations(project_id: str):
+@app.get("/projects/{project_id}/team-recommendations")
+def get_team_recommendations(project_id: str):
+    """
+    For each team slot, recommend consultants whose CL falls within
+    the slot's CL range, ranked by compatibility score.
+    Also annotates whether each consultant has applied or liked this project.
+    """
     p = _p_lookup.get(project_id)
-    if not p:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return rank_consultants_for_project(p, get_all_consultants())
+    if not p: raise HTTPException(404, "Not found")
 
-@app.post("/projects/rankings")
-def submit_project_ranking(submission: RankingSubmission):
-    if submission.id not in _p_lookup:
-        raise HTTPException(status_code=404, detail="Project not found")
-    _project_rankings[submission.id] = submission.ranked_ids
-    return {"status": "ok", "project_id": submission.id}
-
-@app.get("/projects/{project_id}/rankings")
-def get_project_ranking(project_id: str):
-    return {
-        "project_id": project_id,
-        "ranked_ids": _project_rankings.get(project_id, [])
-    }
-
-
-# ── Matching ──────────────────────────────────────────────────────────────────
-
-@app.post("/match")
-def run_matching():
-    global _match_results
     all_consultants = get_all_consultants()
-    c_lookup = get_c_lookup()
-
-    consultant_prefs, project_prefs = build_preference_lists(
-        all_consultants, PROJECTS,
-        _consultant_rankings, _project_rankings,
-    )
-
-    raw_matches = gale_shapley(consultant_prefs, project_prefs)
-
-    enriched = []
-    for cid, pid in raw_matches.items():
-        c = c_lookup[cid]
-        if pid:
-            p = _p_lookup[pid]
-            score = compute_score(c, p)
-            enriched.append({
-                "consultant_id": cid,
-                "consultant_name": c["name"],
-                "project_id": pid,
-                "project_name": p["name"],
-                "client": p["client"],
-                "industry": p["industry"],
-                "score": score,
-                "status": "matched",
-                "is_custom": cid in _custom_consultants,
-            })
-        else:
-            enriched.append({
-                "consultant_id": cid,
-                "consultant_name": c["name"],
-                "project_id": None,
-                "project_name": None,
-                "client": None,
-                "industry": None,
-                "score": None,
-                "status": "unmatched",
-                "is_custom": cid in _custom_consultants,
-            })
-
-    matched = [e for e in enriched if e["status"] == "matched"]
-    avg_score = (
-        round(sum(e["score"]["total"] for e in matched) / len(matched), 1)
-        if matched else 0
-    )
-
-    _match_results = {
-        "matches": enriched,
-        "summary": {
-            "total_consultants": len(all_consultants),
-            "total_projects": len(PROJECTS),
-            "matched_count": len(matched),
-            "unmatched_count": len(all_consultants) - len(matched),
-            "average_compatibility_score": avg_score,
-        }
+    applicants = {
+        a["project_id"]: a
+        for cid, apps in _applications.items()
+        for a in apps
+        if a["project_id"] == project_id
     }
-    return _match_results
+    # Build applicant lookup: consultant_id -> application
+    applicant_by_cid = {}
+    for cid, apps in _applications.items():
+        for a in apps:
+            if a["project_id"] == project_id:
+                applicant_by_cid[cid] = a
 
-@app.get("/match/results")
-def get_match_results():
-    if _match_results is None:
-        raise HTTPException(status_code=404, detail="No matching has been run yet.")
-    return _match_results
+    # Build likes lookup
+    liked_by = {cid for cid, pids in _likes.items() if project_id in pids}
 
-@app.post("/match/reset")
-def reset_state():
-    global _match_results
-    _consultant_rankings.clear()
-    _project_rankings.clear()
-    _custom_consultants.clear()
-    _match_results = None
-    return {"status": "reset"}
+    slots = []
+    for slot in p.get("team_slots", []):
+        cl_min, cl_max = slot["cl_range"]
+        eligible = [c for c in all_consultants
+                    if cl_min <= c.get("cl", 9) <= cl_max]
+        scored = []
+        for c in eligible:
+            sc = compute_score(c, p)
+            cid = c["id"]
+            scored.append({
+                **c,
+                "score": sc,
+                "has_applied": cid in applicant_by_cid,
+                "has_liked": cid in liked_by,
+                "cv_text": applicant_by_cid.get(cid, {}).get("cv_text", ""),
+                "application_status": applicant_by_cid.get(cid, {}).get("status", ""),
+            })
+        scored.sort(key=lambda x: x["score"]["total"], reverse=True)
+        slots.append({
+            "slot": slot,
+            "candidates": scored,
+        })
+
+    return {"project_id": project_id, "slots": slots}
 
 
-# ── Scoring ───────────────────────────────────────────────────────────────────
+# ── Team matching (Gale-Shapley per slot) ─────────────────────
+@app.post("/projects/{project_id}/propose-team")
+def propose_team(project_id: str):
+    """
+    Run Gale-Shapley for each slot independently.
+    Returns the best stable team composition.
+    """
+    p = _p_lookup.get(project_id)
+    if not p: raise HTTPException(404, "Not found")
 
+    all_consultants = get_all_consultants()
+    applicant_by_cid = {}
+    for cid, apps in _applications.items():
+        for a in apps:
+            if a["project_id"] == project_id:
+                applicant_by_cid[cid] = a
+
+    liked_by = {cid for cid, pids in _likes.items() if project_id in pids}
+
+    proposed_team = []
+    used_consultant_ids = set()
+
+    for slot in p.get("team_slots", []):
+        cl_min, cl_max = slot["cl_range"]
+        count = slot.get("count", 1)
+
+        eligible = [c for c in all_consultants
+                    if cl_min <= c.get("cl", 9) <= cl_max
+                    and c["id"] not in used_consultant_ids]
+
+        # Score and sort — boost applied consultants
+        scored = []
+        for c in eligible:
+            sc = compute_score(c, p)
+            cid = c["id"]
+            boost = 10 if cid in applicant_by_cid else (5 if cid in liked_by else 0)
+            scored.append({
+                **c,
+                "score": sc,
+                "adjusted_total": sc["total"] + boost,
+                "has_applied": cid in applicant_by_cid,
+                "has_liked": cid in liked_by,
+                "application_status": applicant_by_cid.get(cid, {}).get("status", ""),
+            })
+        scored.sort(key=lambda x: x["adjusted_total"], reverse=True)
+
+        selected = scored[:count]
+        for s in selected:
+            used_consultant_ids.add(s["id"])
+
+        proposed_team.append({
+            "slot": slot,
+            "proposed": selected,
+        })
+
+    return {"project_id": project_id, "proposed_team": proposed_team}
+
+
+# ── Scoring ───────────────────────────────────────────────────
 @app.get("/score/{consultant_id}/{project_id}")
 def get_score(consultant_id: str, project_id: str):
     c = get_c_lookup().get(consultant_id)
     p = _p_lookup.get(project_id)
-    if not c or not p:
-        raise HTTPException(status_code=404, detail="Not found")
+    if not c or not p: raise HTTPException(404, "Not found")
     return compute_score(c, p)
 
 @app.post("/score/custom")
 def get_custom_score(request: CustomScoreRequest):
     p = _p_lookup.get(request.project_id)
-    if not p:
-        raise HTTPException(status_code=404, detail="Project not found")
+    if not p: raise HTTPException(404, "Not found")
     return compute_score(request.consultant, p)
+
+
+# ── CV Tailoring ──────────────────────────────────────────────
+@app.post("/tailor")
+async def tailor_cv(request: TailorRequest):
+    p = _p_lookup.get(request.project_id)
+    if not p: raise HTTPException(404, "Not found")
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        raise HTTPException(500, "ANTHROPIC_API_KEY not configured")
+
+    prompt = f"""You are an expert CV writer for a management consulting firm.
+A consultant is applying to: {p['name']} at {p['client']} ({p['industry']}).
+Required skills: {", ".join(p['required_skills'])}.
+Description: {p['description']}
+
+Here is the consultant's experience section:
+{request.cv_text}
+
+Rewrite ONLY the experience bullet points:
+1. Keep all job titles, company names, dates exactly as-is
+2. Reorder bullets within each role — most relevant first
+3. Rephrase to highlight relevance to required skills and industry
+4. Do not fabricate experience
+5. Output ONLY the rewritten experience section, no preamble"""
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 1000,
+                  "messages": [{"role": "user", "content": prompt}]},
+        )
+    if response.status_code != 200:
+        raise HTTPException(502, f"Anthropic API error: {response.text}")
+    return {"tailored_text": response.json()["content"][0]["text"], "mode": "ai"}
+
+
+# ── Reset ─────────────────────────────────────────────────────
+@app.post("/reset")
+def reset_state():
+    global _match_results
+    _custom_consultants.clear(); _applications.clear()
+    _likes.clear(); _match_results = None
+    return {"status": "reset"}

@@ -1,6 +1,5 @@
 import React, { useState, useRef } from "react";
 import axios from "axios";
-import { getDistrictFromPostal } from "../utils/locationUtils";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -26,10 +25,11 @@ const INDUSTRIES = [
 ];
 
 const LEVELS = [
-  { label: "Analyst", value: "Analyst", seniority: 1 },
-  { label: "Consultant", value: "Consultant", seniority: 3 },
-  { label: "Senior Consultant", value: "Senior Consultant", seniority: 5 },
-  { label: "Manager", value: "Manager", seniority: 7 },
+  { label: "CL11 Analyst", value: "Analyst", cl: 11 },
+  { label: "CL10 Senior Analyst", value: "Senior Analyst", cl: 10 },
+  { label: "CL9 Consultant", value: "Consultant", cl: 9 },
+  { label: "CL8 Manager", value: "Manager", cl: 8 },
+  { label: "CL7 Senior Manager", value: "Senior Manager", cl: 7 },
 ];
 
 const STEPS = ["About You", "Your Skills", "Upload CV", "Your Preferences", "Review"];
@@ -38,8 +38,8 @@ export default function OnboardingWizard({ onComplete, onBack }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     name: "",
-    level: "Consultant",
-    seniority: 3,
+    cl: 9,
+    cl_title: "Consultant",
     available_from: "2026-09-01",
     skills: [],
     preferred_industries: [],
@@ -49,9 +49,6 @@ export default function OnboardingWizard({ onComplete, onBack }) {
     career_goal: "technical_depth",
     cvText: "",
     cvFileName: "",
-    postalCode: "",
-    homeDistrict: "",
-    homeZone: "",
   });
   const fileRef = useRef();
   const [skillSearch, setSkillSearch] = useState("");
@@ -90,8 +87,6 @@ export default function OnboardingWizard({ onComplete, onBack }) {
       ...form,
       id: uniqueId,
       isCustom: true,
-      cvText: form.cvText,
-      cvFileName: form.cvFileName,
     };
     // Register with backend so they participate in matching
     try {
@@ -156,8 +151,8 @@ export default function OnboardingWizard({ onComplete, onBack }) {
                   {LEVELS.map(l => (
                     <button
                       key={l.value}
-                      className={`option-card ${form.level === l.value ? "active" : ""}`}
-                      onClick={() => { update("level", l.value); update("seniority", l.seniority); }}
+                      className={`option-card ${form.cl_title === l.value ? "active" : ""}`}
+                      onClick={() => { update("cl_title", l.value); update("cl", l.cl); }}
                     >
                       {l.label}
                     </button>
@@ -173,36 +168,6 @@ export default function OnboardingWizard({ onComplete, onBack }) {
                   onChange={e => update("available_from", e.target.value)}
                 />
               </div>
-
-              <div className="form-field">
-                <label>Home postal code
-                  <span className="field-note"> — used to estimate commute to project sites</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 078881"
-                  maxLength={6}
-                  value={form.postalCode}
-                  onChange={e => {
-                    const val = e.target.value.replace(/\D/g, "");
-                    update("postalCode", val);
-                    if (val.length >= 2) {
-                      const info = getDistrictFromPostal(val);
-                      if (info) {
-                        update("homeDistrict", info.district);
-                        update("homeZone", info.zone);
-                      }
-                    }
-                  }}
-                />
-                {form.homeDistrict && (
-                  <div className="postal-result">
-                    📍 <strong>{form.homeDistrict}</strong>
-                    <span className="zone-badge">{form.homeZone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
           )}
 
           {/* Step 1: Skills */}
@@ -400,7 +365,7 @@ export default function OnboardingWizard({ onComplete, onBack }) {
 
               <div className="review-card">
                 <div className="review-name">{form.name}</div>
-                <div className="review-level">{form.level}</div>
+                <div className="review-level">CL{form.cl} {form.cl_title}</div>
 
                 <div className="review-section">
                   <span className="review-label">Skills ({form.skills.length})</span>

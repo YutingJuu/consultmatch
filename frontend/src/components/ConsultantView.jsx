@@ -2,118 +2,91 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ScoreBadge from "./ScoreBadge";
 import CVTailor from "./CVTailor";
-import { getProximityScore, getProximityLabel } from "../utils/locationUtils";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 export default function ConsultantView({ consultantId, customProfile }) {
   const [profile, setProfile] = useState(null);
-  const [projects, setProjects] = useState([]);         // all projects (unscored)
-  const [recommendations, setRecommendations] = useState([]); // scored + ranked
-  const [ranked, setRanked] = useState([]);
-  const [submitted, setSubmitted] = useState(false);
-  const [tab, setTab] = useState("browse");
+  const [projects, setProjects] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
   const [scoresUnlocked, setScoresUnlocked] = useState(false);
   const [loadingScores, setLoadingScores] = useState(false);
+  const [likes, setLikes] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [applyingTo, setApplyingTo] = useState(null);
-
+  const [tab, setTab] = useState("browse");
   const isCustom = !!customProfile;
 
   useEffect(() => {
     if (isCustom) {
-      // Custom profile — load all projects unscored first
       setProfile(customProfile);
       axios.get(`${API}/projects`).then(r => setProjects(r.data));
     } else {
-      // Existing profile — load scored recommendations immediately
       axios.get(`${API}/consultants/${consultantId}`).then(r => setProfile(r.data));
       axios.get(`${API}/consultants/${consultantId}/recommendations`).then(r => {
-        setRecommendations(r.data);
-        setScoresUnlocked(true);
-      });
-      axios.get(`${API}/consultants/${consultantId}/rankings`).then(r => {
-        if (r.data.ranked_ids?.length) {
-          setRanked(r.data.ranked_ids);
-          setSubmitted(true);
-        }
+        setRecommendations(r.data); setScoresUnlocked(true);
       });
     }
+    axios.get(`${API}/likes/${consultantId}`).then(r => setLikes(r.data.liked || []));
+    axios.get(`${API}/applications/${consultantId}`).then(r => setApplications(r.data));
   }, [consultantId, isCustom]);
 
   const unlockScores = async () => {
     setLoadingScores(true);
     try {
-      // Score each project against custom profile
       const scored = await Promise.all(
-        projects.map(async (p) => {
-          const r = await axios.post(`${API}/score/custom`, {
-            consultant: customProfile,
-            project_id: p.id,
-          });
+        projects.map(async p => {
+          const r = await axios.post(`${API}/score/custom`, { consultant: customProfile, project_id: p.id });
           return { ...p, score: r.data };
         })
       );
-      const sorted = scored.sort((a, b) => b.score.total - a.score.total);
-      setRecommendations(sorted);
+      setRecommendations(scored.sort((a,b) => b.score.total - a.score.total));
       setScoresUnlocked(true);
-    } finally {
-      setLoadingScores(false);
+    } finally { setLoadingScores(false); }
+  };
+
+  const toggleLike = async (pid) => {
+    const r = await axios.post(`${API}/likes`, { consultant_id: consultantId, project_id: pid });
+    setLikes(prev => r.data.status === "liked" ? [...prev, pid] : prev.filter(id => id !== pid));
+  };
+
+  const onApplied = (projectId, cvText) => {
+    const p = displayList.find(x => x.id === projectId);
+    if (p) {
+      setApplications(prev => [...prev, {
+        project_id: projectId, project_name: p.name,
+        client: p.client, industry: p.industry,
+        district: p.district || "Singapore",
+        status: "Applied", applied_at: new Date().toISOString(), cv_text: cvText,
+      }]);
     }
-  };
-
-  const toggleRank = (pid) => {
-    if (submitted) return;
-    setRanked(prev =>
-      prev.includes(pid) ? prev.filter(id => id !== pid) : [...prev, pid]
-    );
-  };
-
-  const moveUp = (pid) => {
-    const idx = ranked.indexOf(pid);
-    if (idx <= 0) return;
-    const next = [...ranked];
-    [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-    setRanked(next);
-  };
-
-  const moveDown = (pid) => {
-    const idx = ranked.indexOf(pid);
-    if (idx < 0 || idx >= ranked.length - 1) return;
-    const next = [...ranked];
-    [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
-    setRanked(next);
-  };
-
-  const submitRanking = async () => {
-    const id = isCustom ? "CUSTOM" : consultantId;
-    await axios.post(`${API}/consultants/rankings`, { id, ranked_ids: ranked });
-    setSubmitted(true);
   };
 
   if (!profile) return <div className="loading">Loading...</div>;
 
-  // List to display in browse tab
   const displayList = scoresUnlocked ? recommendations : projects;
+  const likedProjects = displayList.filter(p => likes.includes(p.id));
+  const appliedIds = new Set(applications.map(a => a.project_id));
+
+  const STATUS_COLOR = {
+    "Applied": "#3b82f6", "Under Review": "#d97706",
+    "Shortlisted": "#16a34a", "Not Selected": "#94a3b8",
+  };
 
   return (
     <div className="view-container">
-
-      {/* Profile completeness banner for custom users */}
+      {/* Unlock banner */}
       {isCustom && !scoresUnlocked && (
         <div className="unlock-banner">
           <div className="unlock-banner-left">
             <span className="unlock-icon">🔒</span>
             <div>
-              <strong>Profile complete! Unlock your compatibility scores</strong>
-              <p>You're seeing all available projects. Click below to see how well each one matches your profile.</p>
+              <strong>Unlock your compatibility scores</strong>
+              <p>See how well each project matches your profile.</p>
             </div>
           </div>
-          <button
-            className="unlock-btn"
-            onClick={unlockScores}
-            disabled={loadingScores}
-          >
-            {loadingScores ? "Calculating..." : "✨ Unlock My Scores"}
+          <button className="unlock-btn" onClick={unlockScores} disabled={loadingScores}>
+            {loadingScores ? "Calculating..." : "✨ Unlock Scores"}
           </button>
         </div>
       )}
@@ -123,14 +96,14 @@ export default function ConsultantView({ consultantId, customProfile }) {
         <div className="profile-header">
           <div>
             <h2>{profile.name}</h2>
-            <span className="tag">{profile.level}</span>
-            <span className="tag tag-secondary">L{profile.seniority}</span>
+            <span className="tag cl-tag">CL{profile.cl}</span>
+            <span className="tag">{profile.cl_title || profile.level}</span>
             {isCustom && <span className="tag tag-new">Your Profile</span>}
           </div>
           <div className="profile-meta">
             <span>📅 Available {profile.available_from}</span>
             <span>🏠 {profile.wfh_preference}</span>
-            <span>🎯 {profile.career_goal?.replace("_", " ")}</span>
+            <span>🎯 {profile.career_goal?.replace("_"," ")}</span>
           </div>
         </div>
         <div className="skills-row">
@@ -145,191 +118,194 @@ export default function ConsultantView({ consultantId, customProfile }) {
 
       {/* Tabs */}
       <div className="tab-bar">
-        <button className={tab === "browse" ? "tab active" : "tab"} onClick={() => setTab("browse")}>
-          🔍 Browse Projects ({displayList.length})
+        <button className={tab==="browse"?"tab active":"tab"} onClick={()=>setTab("browse")}>
+          🔍 Browse ({displayList.length})
           {scoresUnlocked && <span className="tab-badge">Scored</span>}
         </button>
-        <button className={tab === "rank" ? "tab active" : "tab"} onClick={() => setTab("rank")}>
-          📝 My Preferences {ranked.length > 0 ? `(${ranked.length})` : ""}
+        <button className={tab==="saved"?"tab active":"tab"} onClick={()=>setTab("saved")}>
+          ❤️ Saved {likes.length > 0 && `(${likes.length})`}
+        </button>
+        <button className={tab==="applications"?"tab active":"tab"} onClick={()=>setTab("applications")}>
+          📋 My Applications {applications.length > 0 && `(${applications.length})`}
         </button>
       </div>
 
+      {/* Browse tab */}
       {tab === "browse" && (
         <div className="card-list">
           {!scoresUnlocked && (
             <div className="unscored-notice">
               <span>📋</span>
-              <span>Showing all {projects.length} available projects. Complete your profile setup to see compatibility scores and personalised rankings.</span>
+              <span>Showing all {projects.length} available projects. Unlock scores to see compatibility rankings.</span>
             </div>
           )}
-
           {displayList.map((p, i) => (
-            <div key={p.id} className={`project-card ${ranked.includes(p.id) ? "selected" : ""}`}>
-              <div className="card-top">
-                <div>
-                  {scoresUnlocked && <span className="rank-num">#{i + 1}</span>}
-                  <strong>{p.name}</strong>
-                  <span className="card-client">{p.client}</span>
-                </div>
-                {scoresUnlocked && p.score
-                  ? <ScoreBadge score={p.score.total} />
-                  : <div className="score-locked">🔒 Score locked</div>
-                }
-              </div>
-
-              <div className="card-meta">
-                <span>🏭 {p.industry}</span>
-                <span>📍 {p.district || p.location}</span>
-                <span>🏠 {p.wfh_policy}</span>
-                <span>⏱ {p.duration}</span>
-                <span>👥 {p.team_size} people</span>
-                {profile?.homeZone && p.zone && (() => {
-                  const score = getProximityScore(profile.homeZone, p.zone);
-                  const prox = getProximityLabel(score);
-                  return (
-                    <span className="proximity-badge" style={{color: prox.color}}>
-                      {prox.icon} {prox.label}
-                    </span>
-                  );
-                })()}
-              </div>
-
-              {scoresUnlocked && p.score && (
-                <>
-                  <div className="score-breakdown">
-                    <span>Skills {p.score.breakdown.skills}/40</span>
-                    <span>Preferences {p.score.breakdown.preference}/40</span>
-                    <span>Seniority {p.score.breakdown.seniority}/20</span>
-                  </div>
-
-                  {/* Per-skill breakdown */}
-                  <div className="skill-match-row">
-                    {p.required_skills.map(s => {
-                      const matched = p.score.matched_skills.includes(s.toLowerCase());
-                      return (
-                        <span key={s} className={`skill-match-chip ${matched ? "match" : "no-match"}`}>
-                          {matched ? "✅" : "❌"} {s}
-                        </span>
-                      );
-                    })}
-                  </div>
-
-                  <div className="card-flags">
-                    {p.score.industry_match && <span className="flag green">✓ Industry fit</span>}
-                    {p.score.wfh_match && <span className="flag green">✓ WFH match</span>}
-                    {p.score.style_match && <span className="flag green">✓ Work style match</span>}
-                    {p.score.duration_match && <span className="flag green">✓ Duration match</span>}
-                    {!p.score.industry_match && <span className="flag grey">✗ Industry mismatch</span>}
-                    {!p.score.wfh_match && <span className="flag grey">✗ WFH mismatch</span>}
-                  </div>
-                </>
-              )}
-
-              <p className="card-desc">{p.description}</p>
-
-              <button
-                className={`select-btn ${ranked.includes(p.id) ? "selected" : ""}`}
-                onClick={() => toggleRank(p.id)}
-                disabled={submitted}
-              >
-                {ranked.includes(p.id) ? "✓ Added to preferences" : "+ Add to preferences"}
-              </button>
-              <button
-                className="apply-btn"
-                onClick={() => setApplyingTo(p)}
-              >
-                📄 Apply to this Role
-              </button>
-            </div>
+            <ProjectCard key={p.id} p={p} i={i} scoresUnlocked={scoresUnlocked}
+              liked={likes.includes(p.id)} applied={appliedIds.has(p.id)}
+              onLike={() => toggleLike(p.id)}
+              onApply={() => setApplyingTo(p)} />
           ))}
         </div>
       )}
 
+      {/* Saved tab */}
+      {tab === "saved" && (
+        <div className="card-list">
+          {likedProjects.length === 0
+            ? <div className="empty-state">
+                <p>❤️</p>
+                <p>No saved projects yet.</p>
+                <p>Click the heart icon on any project card to save it here.</p>
+              </div>
+            : likedProjects.map((p, i) => (
+                <ProjectCard key={p.id} p={p} i={i} scoresUnlocked={scoresUnlocked}
+                  liked={true} applied={appliedIds.has(p.id)}
+                  onLike={() => toggleLike(p.id)}
+                  onApply={() => setApplyingTo(p)} />
+              ))
+          }
+        </div>
+      )}
+
+      {/* Applications tab */}
+      {tab === "applications" && (
+        <div className="applications-panel">
+          {applications.length === 0
+            ? <div className="empty-state">
+                <p>📋</p>
+                <p>No applications yet.</p>
+                <p>Click "Apply to this Role" on any project card to get started.</p>
+              </div>
+            : applications.map(a => (
+                <div key={a.project_id} className="application-card">
+                  <div className="application-header">
+                    <div>
+                      <strong>{a.project_name}</strong>
+                      <span className="card-client">{a.client} · {a.industry}</span>
+                    </div>
+                    <span className="status-pill"
+                      style={{background: STATUS_COLOR[a.status] + "20",
+                              color: STATUS_COLOR[a.status],
+                              border: `1px solid ${STATUS_COLOR[a.status]}40`}}>
+                      {a.status}
+                    </span>
+                  </div>
+                  <div className="application-meta">
+                    <span>📍 {a.district}</span>
+                    <span>🕐 Applied {new Date(a.applied_at).toLocaleDateString("en-SG", {day:"numeric", month:"short", year:"numeric"})}</span>
+                  </div>
+                  <div className="application-timeline">
+                    {["Applied","Under Review","Shortlisted"].map((s, idx) => {
+                      const statuses = ["Applied","Under Review","Shortlisted","Not Selected"];
+                      const currentIdx = statuses.indexOf(a.status);
+                      const done = statuses.indexOf(s) <= currentIdx && a.status !== "Not Selected";
+                      return (
+                        <div key={s} className={`timeline-step ${done ? "done" : ""} ${a.status === s ? "current" : ""}`}>
+                          <div className="timeline-dot"/>
+                          <span>{s}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {a.status === "Not Selected" && (
+                    <p className="not-selected-note">
+                      Thank you for your interest. The project team has selected other candidates for this role.
+                    </p>
+                  )}
+                </div>
+              ))
+          }
+        </div>
+      )}
+
+      {/* CV Tailor modal */}
       {applyingTo && (
         <CVTailor
           project={applyingTo}
           consultantProfile={profile}
+          consultantId={consultantId}
           onClose={() => setApplyingTo(null)}
+          onApplied={onApplied}
         />
       )}
+    </div>
+  );
+}
 
-      {tab === "rank" && !submitted && (
-        <div className="rank-panel">
-          <h3>Your Preference Ranking</h3>
-          <p className="rank-hint">Order your preferred projects. #1 is your top choice.</p>
+function ProjectCard({ p, i, scoresUnlocked, liked, applied, onLike, onApply }) {
+  return (
+    <div className={`project-card ${liked ? "liked-card" : ""}`}>
+      <div className="card-top">
+        <div>
+          {scoresUnlocked && <span className="rank-num">#{i+1}</span>}
+          <strong>{p.name}</strong>
+          <span className="card-client">{p.client}</span>
+        </div>
+        <div className="card-top-right">
+          {scoresUnlocked && p.score
+            ? <ScoreBadge score={p.score.total} />
+            : <div className="score-locked">🔒 Score locked</div>}
+          <button className={`like-btn ${liked ? "liked" : ""}`} onClick={onLike}
+            title={liked ? "Remove from saved" : "Save this project"}>
+            {liked ? "❤️" : "🤍"}
+          </button>
+        </div>
+      </div>
 
-          {ranked.length === 0 && (
-            <p className="empty-msg">No projects added yet. Browse and add from the Browse tab.</p>
-          )}
+      <div className="card-meta">
+        <span>🏭 {p.industry}</span>
+        <span>📍 {p.district || p.location}</span>
+        <span>🏠 {p.wfh_policy}</span>
+        <span>⏱ {p.duration}</span>
+        <span>👥 {p.team_size || "—"} people</span>
+      </div>
 
-          <div className="rank-list">
-            {ranked.map((pid, idx) => {
-              const p = displayList.find(r => r.id === pid);
-              if (!p) return null;
-              return (
-                <div key={pid} className="rank-item">
-                  <span className="rank-pos">{idx + 1}</span>
-                  <div className="rank-info">
-                    <strong>{p.name}</strong>
-                    <span>{p.client} · {p.industry}</span>
-                  </div>
-                  {scoresUnlocked && p.score && <ScoreBadge score={p.score.total} small />}
-                  <div className="rank-controls">
-                    <button onClick={() => moveUp(pid)}>▲</button>
-                    <button onClick={() => moveDown(pid)}>▼</button>
-                    <button onClick={() => toggleRank(pid)} className="remove-btn">✕</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {ranked.length > 0 && (
-            <button className="submit-btn" onClick={submitRanking}>
-              Submit Preferences →
-            </button>
-          )}
+      {/* Team slots */}
+      {p.team_slots && (
+        <div className="slot-row">
+          {p.team_slots.map(s => (
+            <span key={s.slot_id} className="slot-chip">
+              {s.count}× {s.cl_label}
+            </span>
+          ))}
         </div>
       )}
 
-      {tab === "rank" && submitted && (
-        <div className="confirmation-screen">
-          <div className="confirmation-icon">✅</div>
-          <h3>Preferences Submitted!</h3>
-          <p>Your project preferences have been recorded successfully.</p>
-
-          <div className="confirmation-list">
-            <p className="confirmation-list-title">Your ranked preferences:</p>
-            {ranked.map((pid, idx) => {
-              const p = displayList.find(r => r.id === pid);
-              if (!p) return null;
+      {scoresUnlocked && p.score && (
+        <>
+          <div className="score-breakdown">
+            <span>Skills {p.score.breakdown.skills}/40</span>
+            <span>Preferences {p.score.breakdown.preference}/40</span>
+            <span>CL Fit {p.score.breakdown.cl}/20</span>
+          </div>
+          <div className="skill-match-row">
+            {p.required_skills.map(s => {
+              const matched = p.score.matched_skills.includes(s.toLowerCase());
               return (
-                <div key={pid} className="confirmation-item">
-                  <span className="rank-pos">{idx + 1}</span>
-                  <div className="rank-info">
-                    <strong>{p.name}</strong>
-                    <span>{p.client} · {p.industry}</span>
-                  </div>
-                  {scoresUnlocked && p.score && <ScoreBadge score={p.score.total} small />}
-                </div>
+                <span key={s} className={`skill-match-chip ${matched?"match":"no-match"}`}>
+                  {matched?"✅":"❌"} {s}
+                </span>
               );
             })}
           </div>
-
-          <div className="confirmation-next">
-            <div className="next-step-badge">📬 What happens next?</div>
-            <p>
-              Your profile and project preferences are now visible to project managers
-              and the staffing team. You will be notified if a project team expresses
-              interest in your profile.
-            </p>
-            <p className="confirmation-note">
-              In the meantime, you can continue browsing projects and update your
-              preferences at any time.
-            </p>
+          <div className="card-flags">
+            {p.score.industry_match && <span className="flag green">✓ Industry fit</span>}
+            {p.score.wfh_match && <span className="flag green">✓ WFH match</span>}
+            {p.score.style_match && <span className="flag green">✓ Work style</span>}
+            {p.score.duration_match && <span className="flag green">✓ Duration</span>}
+            {!p.score.industry_match && <span className="flag grey">✗ Industry mismatch</span>}
+            {!p.score.wfh_match && <span className="flag grey">✗ WFH mismatch</span>}
           </div>
-        </div>
+        </>
       )}
+
+      <p className="card-desc">{p.description}</p>
+
+      <div className="card-actions">
+        {applied
+          ? <span className="applied-badge">✅ Applied</span>
+          : <button className="apply-btn" onClick={onApply}>📄 Apply to this Role</button>}
+      </div>
     </div>
   );
 }

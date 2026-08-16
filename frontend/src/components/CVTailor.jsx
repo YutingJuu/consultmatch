@@ -1,7 +1,5 @@
 import React, { useState, useRef } from "react";
 
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-
 // Your actual CV experience section as the default template
 const DEFAULT_CV_TEXT = `EXPERIENCE
 
@@ -25,12 +23,13 @@ MSc Business Analytics, NUS – AI & Analytics Projects
 • Developed an AI-powered wedding design application that generates personalised visual concepts and vendor recommendations using LLM-driven prompt generation and image generation models.
 • Built an agentic AI pet health assistant that performs guided symptom triage and generates structured care insights using multi-step reasoning, dual RAG, and LLM-based decision support.`;
 
-export default function CVTailor({ project, consultantProfile, onClose }) {
+export default function CVTailor({ project, consultantProfile, consultantId, onClose, onApplied }) {
   const [step, setStep] = useState("upload"); // upload | tailoring | review | submitted
   const [cvText, setCvText] = useState(consultantProfile?.cvText && !consultantProfile.cvText.startsWith("[PDF") ? consultantProfile.cvText : "");
   const [tailoredText, setTailoredText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [tailorMode, setTailorMode] = useState(null);
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
@@ -54,51 +53,33 @@ export default function CVTailor({ project, consultantProfile, onClose }) {
     setLoading(true);
     setError("");
     try {
-      const prompt = `You are an expert CV writer for a management consulting firm.
-
-A consultant is applying to the following project role:
-- Project: ${project.name}
-- Client: ${project.client}
-- Industry: ${project.industry}
-- Required skills: ${project.required_skills.join(", ")}
-- Description: ${project.description}
-- Duration: ${project.duration}
-- Work style: ${project.preferred_work_style}
-
-Here is the consultant's experience section from their CV:
-${cvText}
-
-Your task: Rewrite ONLY the experience bullet points to better highlight relevance to this specific role.
-Rules:
-1. Keep ALL job titles, company names, and dates exactly as they are — do not change them
-2. Reorder or rephrase bullet points within each role to lead with the most relevant experience first
-3. Where a bullet is highly relevant to the required skills or industry, make it more specific and impactful
-4. Do not fabricate experience — only rephrase and reorder what exists
-5. Keep the same number of bullet points per role
-6. Output ONLY the rewritten experience section in the same format — no preamble, no explanation`;
-
-      const response = await fetch(ANTHROPIC_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }],
-        }),
+      const response = await axios.post(`${API}/tailor`, {
+        cv_text: cvText,
+        project_id: project.id,
       });
-
-      const data = await response.json();
-      const tailored = data.content?.[0]?.text || "";
-      setTailoredText(tailored);
+      setTailoredText(response.data.tailored_text);
+      setTailorMode(response.data.mode);
       setStep("review");
     } catch (e) {
-      setError("Failed to tailor CV. Please try again.");
+      const msg = e.response?.data?.detail || "Failed to tailor CV. Please try again.";
+      setError(msg);
+      setStep("upload");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    try {
+      await axios.post(`${API}/applications`, {
+        consultant_id: consultantId,
+        project_id: project.id,
+        cv_text: tailoredText,
+      });
+      if (onApplied) onApplied(project.id, tailoredText);
+    } catch (e) {
+      // Already applied — still show submitted
+    }
     setStep("submitted");
   };
 
@@ -198,11 +179,18 @@ Rules:
           {step === "review" && (
             <div>
               <div className="review-banner">
-                <span>✨</span>
+                <span>{tailorMode === "ai" ? "🤖" : "⚙️"}</span>
                 <div>
                   <strong>CV tailored for {project.name}</strong>
-                  <p>Review and edit the tailored experience section below before submitting.</p>
+                  <p>
+                    {tailorMode === "ai"
+                      ? "Claude AI rewrote your experience to highlight relevance. Review and edit below."
+                      : "Bullets reordered by keyword relevance. Review and edit below before submitting."}
+                  </p>
                 </div>
+                <span className="tailor-mode-badge">
+                  {tailorMode === "ai" ? "AI ✨" : "Rule-based ⚙️"}
+                </span>
               </div>
 
               <div className="diff-header">
