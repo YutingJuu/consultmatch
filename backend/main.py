@@ -62,7 +62,10 @@ class CustomScoreRequest(BaseModel):
     consultant: dict; project_id: str
 
 class TailorRequest(BaseModel):
-    cv_text: str; project_id: str
+    cv_text: Optional[str] = ""
+    project_id: str
+    file_base64: Optional[str] = None   # base64-encoded file content
+    file_name: Optional[str] = None     # original filename for type detection
 
 class StatusUpdate(BaseModel):
     consultant_id: str; project_id: str; status: str
@@ -306,6 +309,26 @@ def get_custom_score(request: CustomScoreRequest):
 
 
 # ── CV Tailoring ──────────────────────────────────────────────
+def extract_text_from_file(file_bytes: bytes, filename: str) -> str:
+    """Extract text from PPTX or DOCX files."""
+    import io
+    name = filename.lower()
+    if name.endswith(".pptx"):
+        from pptx import Presentation
+        prs = Presentation(io.BytesIO(file_bytes))
+        texts = []
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text") and shape.text.strip():
+                    texts.append(shape.text.strip())
+        return "\n".join(texts)
+    elif name.endswith(".docx") or name.endswith(".doc"):
+        from docx import Document
+        doc = Document(io.BytesIO(file_bytes))
+        return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    return ""
+
+
 @app.post("/tailor")
 async def tailor_cv(request: TailorRequest):
     p = _p_lookup.get(request.project_id)
@@ -314,28 +337,95 @@ async def tailor_cv(request: TailorRequest):
     if not api_key:
         raise HTTPException(500, "ANTHROPIC_API_KEY not configured")
 
-    prompt = f"""You are an expert CV writer for a management consulting firm.
-A consultant is applying to: {p['name']} at {p['client']} ({p['industry']}).
-Required skills: {", ".join(p['required_skills'])}.
+    role_context = f"""Role: {p['name']} at {p['client']} ({p['industry']})
+Required skills: {", ".join(p['required_skills'])}
 Description: {p['description']}
+Duration: {p['duration']}"""
 
-Here is the consultant's experience section:
+    # ── File-based input (PPTX, DOCX, PDF) ───────────────────
+    if request.file_base64 and request.file_name:
+        import base64
+        file_bytes = base64.b64decode(request.file_base64)
+        name = request.file_name.lower()
+
+        if name.endswith(".pdf"):
+            # Send PDF natively to Claude — it can read it directly
+            prompt_text = f"""You are an expert CV writer for a management consulting firm.
+
+The consultant is applying to this role:
+{role_context}
+
+The attached PDF is their CV. Please:
+1. Extract the experience/work history section
+2. Rewrite the bullet points to highlight relevance to the role above
+3. Keep all job titles, company names, and dates exactly as-is
+4. Do not fabricate any experience
+5. Output ONLY the rewritten experience section, no preamble or explanation"""
+
+            messages = [{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "document",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "application/pdf",
+                            "data": request.file_base64,
+                        }
+                    },
+                    {"type": "text", "text": prompt_text}
+                ]
+            }]
+
+        else:
+            # PPTX or DOCX — extract text server-side first
+            extracted = extract_text_from_file(file_bytes, request.file_name)
+            if not extracted:
+                raise HTTPException(400, "Could not extract text from file")
+
+            prompt_text = f"""You are an expert CV writer for a management consulting firm.
+
+The consultant is applying to this role:
+{role_context}
+
+Here is their CV content (extracted from {request.file_name}):
+{extracted}
+
+Please:
+1. Identify and extract the experience/work history section
+2. Rewrite the bullet points to highlight relevance to the role above
+3. Keep all job titles, company names, and dates exactly as-is
+4. Do not fabricate any experience
+5. Output ONLY the rewritten experience section, no preamble or explanation"""
+
+            messages = [{"role": "user", "content": prompt_text}]
+
+    # ── Text-based input ──────────────────────────────────────
+    else:
+        prompt_text = f"""You are an expert CV writer for a management consulting firm.
+
+The consultant is applying to this role:
+{role_context}
+
+Here is their experience section:
 {request.cv_text}
 
-Rewrite ONLY the experience bullet points:
-1. Keep all job titles, company names, dates exactly as-is
-2. Reorder bullets within each role — most relevant first
-3. Rephrase to highlight relevance to required skills and industry
-4. Do not fabricate experience
-5. Output ONLY the rewritten experience section, no preamble"""
+Please:
+1. Rewrite the bullet points to highlight relevance to the role above
+2. Keep all job titles, company names, and dates exactly as-is
+3. Reorder bullets within each role — most relevant first
+4. Do not fabricate any experience
+5. Output ONLY the rewritten experience section, no preamble or explanation"""
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+        messages = [{"role": "user", "content": prompt_text}]
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
-            json={"model": "claude-sonnet-4-6", "max_tokens": 1000,
-                  "messages": [{"role": "user", "content": prompt}]},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 1500,
+                  "messages": messages},
         )
     if response.status_code != 200:
         raise HTTPException(502, f"Anthropic API error: {response.text}")

@@ -30,18 +30,32 @@ export default function CVTailor({ project, consultantProfile, consultantId, onC
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [tailorMode, setTailorMode] = useState(null);
+  const [fileData, setFileData] = useState(
+    consultantProfile?.cvFileBase64
+      ? { base64: consultantProfile.cvFileBase64, name: consultantProfile.cvFileName || "cv.pdf" }
+      : null
+  );
   const fileRef = useRef();
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.type === "text/plain") {
+    const name = file.name.toLowerCase();
+    setError("");
+
+    if (name.endsWith(".txt")) {
       const text = await file.text();
       setCvText(text);
+      setFileData(null);
     } else {
-      // For PDF/PPTX — just note it's uploaded, use default
-      setCvText(DEFAULT_CV_TEXT);
-      setError("Note: Binary files are read as text in this demo. Using extracted CV content.");
+      // PDF, PPTX, DOCX — convert to base64, send to backend for AI extraction
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result.split(",")[1];
+        setFileData({ base64, name: file.name });
+        setCvText(""); // clear text — file will be sent directly
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -53,10 +67,11 @@ export default function CVTailor({ project, consultantProfile, consultantId, onC
     setLoading(true);
     setError("");
     try {
-      const response = await axios.post(`${API}/tailor`, {
-        cv_text: cvText,
-        project_id: project.id,
-      });
+      const payload = fileData
+        ? { project_id: project.id, file_base64: fileData.base64, file_name: fileData.name }
+        : { project_id: project.id, cv_text: cvText };
+
+      const response = await axios.post(`${API}/tailor`, payload);
       setTailoredText(response.data.tailored_text);
       setTailorMode(response.data.mode);
       setStep("review");
@@ -127,9 +142,9 @@ export default function CVTailor({ project, consultantProfile, consultantId, onC
 
               <div className="cv-upload-zone" onClick={() => fileRef.current.click()}>
                 <span className="upload-icon">📄</span>
-                <span>Click to upload CV (PDF or .txt)</span>
+                <span>Click to upload CV</span>
                 <span className="upload-sub">or use the options below</span>
-                <input ref={fileRef} type="file" accept=".pdf,.txt,.pptx"
+                <input ref={fileRef} type="file" accept=".pdf,.txt,.pptx,.docx,.doc"
                   style={{display:"none"}} onChange={handleFileUpload} />
               </div>
 
@@ -249,7 +264,7 @@ export default function CVTailor({ project, consultantProfile, consultantId, onC
             <button
               className="modal-btn primary"
               onClick={() => { setStep("tailoring"); tailorCV(); }}
-              disabled={!cvText}
+              disabled={!cvText && !fileData}
             >
               ✨ Tailor with AI →
             </button>

@@ -49,6 +49,7 @@ export default function OnboardingWizard({ onComplete, onBack }) {
     career_goal: "technical_depth",
     cvText: "",
     cvFileName: "",
+    cvFileBase64: "",
   });
   const fileRef = useRef();
   const [skillSearch, setSkillSearch] = useState("");
@@ -222,20 +223,27 @@ export default function OnboardingWizard({ onComplete, onBack }) {
 
               <div className="cv-upload-zone" onClick={() => fileRef.current.click()}>
                 <span className="upload-icon">📄</span>
-                <span>{form.cvFileName || "Click to upload CV (PDF or .txt)"}</span>
-                <span className="upload-sub">Supported: PDF, TXT</span>
-                <input ref={fileRef} type="file" accept=".pdf,.txt"
+                <span>{form.cvFileName || "Click to upload CV"}</span>
+                <span className="upload-sub">Supported: PDF, TXT, PPTX, DOCX</span>
+                <input ref={fileRef} type="file" accept=".pdf,.txt,.pptx,.docx,.doc"
                   style={{display:"none"}}
                   onChange={async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
                     update("cvFileName", file.name);
-                    if (file.type === "text/plain") {
+                    const name = file.name.toLowerCase();
+                    if (name.endsWith(".txt")) {
                       const text = await file.text();
                       update("cvText", text);
                     } else {
-                      // PDF — store filename, text extraction happens on apply
-                      update("cvText", `[PDF uploaded: ${file.name}]`);
+                      // PDF/PPTX/DOCX — store as base64 for AI processing on apply
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const base64 = reader.result.split(",")[1];
+                        update("cvText", "");
+                        update("cvFileBase64", base64);
+                      };
+                      reader.readAsDataURL(file);
                     }
                   }}
                 />

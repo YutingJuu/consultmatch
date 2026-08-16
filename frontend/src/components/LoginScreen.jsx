@@ -14,11 +14,11 @@ export default function LoginScreen({ onLogin }) {
   useEffect(() => {
     axios.get(`${API}/consultants`).then(r => {
       setConsultants(r.data);
-      setSelectedConsultantId(r.data[0]?.id || "");
+      if (r.data.length > 0) setSelectedConsultantId(r.data[0].id);
     });
     axios.get(`${API}/projects`).then(r => {
       setProjects(r.data);
-      setSelectedManagerId(r.data[0]?.manager_id || "");
+      if (r.data.length > 0) setSelectedManagerId(r.data[0].manager_id);
     });
   }, []);
 
@@ -116,7 +116,7 @@ export default function LoginScreen({ onLogin }) {
             <select value={selectedConsultantId}
               onChange={e => setSelectedConsultantId(e.target.value)}>
               {consultants.map(c => (
-                <option key={c.id} value={c.id}>{c.name} ({c.level})</option>
+                <option key={c.id} value={c.id}>{c.name} (CL{c.cl} {c.cl_title})</option>
               ))}
             </select>
           </div>
@@ -126,7 +126,7 @@ export default function LoginScreen({ onLogin }) {
             if (!c) return null;
             return (
               <div className="profile-preview">
-                <div className="preview-row"><span>Level</span><strong>{c.level}</strong></div>
+                <div className="preview-row"><span>Level</span><strong>CL{c.cl} {c.cl_title}</strong></div>
                 <div className="preview-row"><span>Industries</span><strong>{c.preferred_industries.join(", ")}</strong></div>
                 <div className="preview-row"><span>WFH</span><strong>{c.wfh_preference}</strong></div>
                 <div className="preview-row"><span>Goal</span><strong>{c.career_goal.replace("_"," ")}</strong></div>

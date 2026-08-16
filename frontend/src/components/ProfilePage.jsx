@@ -294,9 +294,9 @@ export default function ProfilePage({ profile, onUpdate, onClose }) {
 
               <div className="cv-upload-zone" onClick={() => fileRef.current.click()}>
                 <span className="upload-icon">📤</span>
-                <span>{form.cvFileName ? "Upload a new version" : "Upload CV (PDF or .txt)"}</span>
+                <span>{form.cvFileName ? "Upload a new version" : "Upload CV"}</span>
                 <span className="upload-sub">Click to browse files</span>
-                <input ref={fileRef} type="file" accept=".pdf,.txt"
+                <input ref={fileRef} type="file" accept=".pdf,.txt,.pptx,.docx,.doc"
                   style={{ display: "none" }} onChange={handleFileUpload} />
               </div>
 
