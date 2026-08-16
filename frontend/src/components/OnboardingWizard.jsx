@@ -168,6 +168,7 @@ export default function OnboardingWizard({ onComplete, onBack }) {
                   onChange={e => update("available_from", e.target.value)}
                 />
               </div>
+            </div>
           )}
 
           {/* Step 1: Skills */}
