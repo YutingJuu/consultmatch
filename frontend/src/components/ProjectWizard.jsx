@@ -14,6 +14,7 @@ const DISTRICTS = [
   "Woodlands / Kranji", "Yishun / Sembawang", "Bishan / Ang Mo Kio",
 ];
 
+// CL7 = most senior (Manager), CL11 = most junior (Analyst)
 const CL_OPTIONS = [
   { label: "CL7 Manager", cl: 7 },
   { label: "CL8 Associate Manager", cl: 8 },
@@ -38,21 +39,22 @@ export default function ProjectWizard({ onComplete, onBack }) {
   });
   const [slots, setSlots] = useState([]);
   const [newSlot, setNewSlot] = useState({
-    role: "", cl_min: 9, cl_max: 10, description: ""
+    role: "", cl_selected: [9, 10], description: ""
   });
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const addSlot = () => {
-    if (!newSlot.role.trim()) return;
-    const cl_min = Math.min(newSlot.cl_min, newSlot.cl_max);
-    const cl_max = Math.max(newSlot.cl_min, newSlot.cl_max);
+    if (!newSlot.role.trim() || newSlot.cl_selected.length === 0) return;
+    const sorted = [...newSlot.cl_selected].sort((a, b) => a - b);
+    const cl_min = sorted[0];
+    const cl_max = sorted[sorted.length - 1];
     const clLabels = CL_OPTIONS
-      .filter(o => o.cl >= cl_min && o.cl <= cl_max)
-      .map(o => o.label.replace(/CL\d+ /, ""));
-    const cl_label = cl_min === cl_max
-      ? `CL${cl_min} ${clLabels[0]}`
-      : `CL${cl_min}–${cl_max} ${clLabels.join(" / ")}`;
+      .filter(o => newSlot.cl_selected.includes(o.cl))
+      .map(o => o.label);
+    const cl_label = clLabels.length === 1
+      ? clLabels[0]
+      : `CL${cl_min}–CL${cl_max} (${clLabels.map(l => l.replace(/CL\d+ /, "")).join(" / ")})`;
     const id = `CUSTOM-${Date.now()}-${slots.length}`;
     setSlots(prev => [...prev, {
       slot_id: id,
@@ -62,7 +64,7 @@ export default function ProjectWizard({ onComplete, onBack }) {
       required_skills: [],
       description: newSlot.description.trim() || `${newSlot.role} role for this project.`,
     }]);
-    setNewSlot({ role: "", cl_min: 9, cl_max: 10, description: "" });
+    setNewSlot({ role: "", cl_selected: [9, 10], description: "" });
   };
 
   const removeSlot = (id) => setSlots(prev => prev.filter(s => s.slot_id !== id));
@@ -251,7 +253,7 @@ export default function ProjectWizard({ onComplete, onBack }) {
                   <label>Career level range</label>
                   <div className="cl-range-row">
                     <div className="cl-range-side">
-                      <span className="cl-range-label">Minimum</span>
+                      <span className="cl-range-label">Most Senior</span>
                       <div className="option-cards" style={{flexDirection:"column",gap:"4px"}}>
                         {CL_OPTIONS.map(o => (
                           <button key={o.cl}
@@ -263,9 +265,9 @@ export default function ProjectWizard({ onComplete, onBack }) {
                         ))}
                       </div>
                     </div>
-                    <div className="cl-range-divider">to</div>
+                    <div className="cl-range-divider">↕</div>
                     <div className="cl-range-side">
-                      <span className="cl-range-label">Maximum</span>
+                      <span className="cl-range-label">Most Junior</span>
                       <div className="option-cards" style={{flexDirection:"column",gap:"4px"}}>
                         {CL_OPTIONS.map(o => (
                           <button key={o.cl}
@@ -290,7 +292,7 @@ export default function ProjectWizard({ onComplete, onBack }) {
                 </div>
 
                 <button className="add-slot-btn" onClick={addSlot}
-                  disabled={!newSlot.role.trim()}>
+                  disabled={!newSlot.role.trim() || newSlot.cl_selected.length === 0}>
                   + Add this role
                 </button>
               </div>
@@ -323,7 +325,7 @@ export default function ProjectWizard({ onComplete, onBack }) {
                 </div>
 
                 <div className="review-section" style={{marginTop:"16px"}}>
-                  <span className="review-label">Team Slots ({slots.length} roles)</span>
+                  <span className="review-label">Team Slots ({slots.length} roles open)</span>
                   <div className="slots-added">
                     {slots.map(s => (
                       <div key={s.slot_id} className="slot-added-item">
