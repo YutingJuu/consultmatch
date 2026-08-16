@@ -279,23 +279,40 @@ Job description: {r['description']}"""
         import base64
         file_bytes = base64.b64decode(request.file_base64)
         name = request.file_name.lower()
-        if name.endswith(".pdf"):
+        TAILOR_INSTRUCTIONS = f"""You are a senior CV writer at a top management consulting firm, expert at tailoring CVs for specific roles.
+
+The consultant is applying to:
+{role_context}
+
+Your task is to aggressively tailor the experience section for this specific role. Follow these rules:
+
+1. REORDER: Within each job, move bullets most relevant to the target role to the top. Bury or remove irrelevant bullets.
+2. REFRAME: Rephrase bullets to use language from the job description and emphasise transferable skills. Be specific — name the exact tools, technologies, or methods that match the required skills.
+3. QUANTIFY: Where numbers exist in the original, keep them. Add specificity where the original is vague.
+4. DOWNPLAY: Shrink or remove bullets that add no value for this specific role. It is OK to drop bullets entirely if they are irrelevant.
+5. KEEP FACTS: Do not invent experience, numbers, or technologies that are not in the original CV.
+6. KEEP STRUCTURE: Preserve all job titles, company names, and date ranges exactly as-is.
+7. OUTPUT FORMAT: Use the same format as the input (bullet points under each job). Output ONLY the rewritten experience section — no preamble, no explanation, no headers outside the experience section.
+
+Be bold. A generic CV that slightly reorders bullets is not acceptable. The output should read as if this consultant was born for this specific role."""
+
+    if name.endswith(".pdf"):
             messages = [{"role":"user","content":[
                 {"type":"document","source":{"type":"base64","media_type":"application/pdf","data":request.file_base64}},
-                {"type":"text","text":f"You are an expert CV writer for a management consulting firm.\n\nThe consultant is applying to:\n{role_context}\n\nFrom the attached PDF CV:\n1. Extract the experience/work history section\n2. Rewrite bullets to highlight relevance to this role\n3. Keep all job titles, company names, dates exactly as-is\n4. Do not fabricate experience\n5. Output ONLY the rewritten experience section, no preamble"}
+                {"type":"text","text":TAILOR_INSTRUCTIONS + "\n\nThe CV is attached as a PDF. Extract the experience section and tailor it as instructed."}
             ]}]
         else:
             extracted = extract_text_from_file(file_bytes, request.file_name)
             if not extracted: raise HTTPException(400, "Could not extract text from file")
-            messages = [{"role":"user","content":f"You are an expert CV writer for a management consulting firm.\n\nThe consultant is applying to:\n{role_context}\n\nHere is their CV content (extracted from {request.file_name}):\n{extracted}\n\n1. Identify and extract the experience/work history section\n2. Rewrite bullets to highlight relevance to this role\n3. Keep all job titles, company names, dates exactly as-is\n4. Do not fabricate experience\n5. Output ONLY the rewritten experience section, no preamble"}]
+            messages = [{"role":"user","content":TAILOR_INSTRUCTIONS + f"\n\nHere is the CV content extracted from {request.file_name}:\n\n{extracted}"}]
     else:
-        messages = [{"role":"user","content":f"You are an expert CV writer for a management consulting firm.\n\nThe consultant is applying to:\n{role_context}\n\nHere is their experience section:\n{request.cv_text}\n\n1. Rewrite bullets to highlight relevance to this role\n2. Keep all job titles, company names, dates exactly as-is\n3. Reorder bullets within each role — most relevant first\n4. Do not fabricate experience\n5. Output ONLY the rewritten experience section, no preamble"}]
+        messages = [{"role":"user","content":TAILOR_INSTRUCTIONS + f"\n\nHere is the consultant's experience section:\n\n{request.cv_text}"}]
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": "claude-sonnet-4-6", "max_tokens": 1500, "messages": messages},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 2000, "messages": messages},
         )
     if response.status_code != 200:
         raise HTTPException(502, f"Anthropic API error: {response.text}")
