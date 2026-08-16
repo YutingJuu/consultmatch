@@ -123,14 +123,15 @@ export default function ProfilePage({ profile, onUpdate, onClose }) {
                 <label>Career Level</label>
                 <div className="option-cards">
                   {[
-                    { label: "Analyst", value: "Analyst", seniority: 1 },
-                    { label: "Consultant", value: "Consultant", seniority: 3 },
-                    { label: "Senior Consultant", value: "Senior Consultant", seniority: 5 },
-                    { label: "Manager", value: "Manager", seniority: 7 },
+                    { label: "CL11 Analyst", value: "Analyst", cl: 11 },
+                    { label: "CL10 Senior Analyst", value: "Senior Analyst", cl: 10 },
+                    { label: "CL9 Consultant", value: "Consultant", cl: 9 },
+                    { label: "CL8 Associate Manager", value: "Associate Manager", cl: 8 },
+                    { label: "CL7 Manager", value: "Manager", cl: 7 },
                   ].map(l => (
                     <button key={l.value}
-                      className={`option-card ${form.level === l.value ? "active" : ""}`}
-                      onClick={() => { update("level", l.value); update("seniority", l.seniority); }}>
+                      className={`option-card ${form.cl_title === l.value ? "active" : ""}`}
+                      onClick={() => { update("cl_title", l.value); update("cl", l.cl); }}>
                       {l.label}
                     </button>
                   ))}

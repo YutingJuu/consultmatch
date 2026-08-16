@@ -4,11 +4,11 @@ import OnboardingWizard from "./OnboardingWizard";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
-// 3 curated sample profiles — diverse CL, background, preferences
-const SAMPLE_IDS = ["C01", "C08", "C15"];
+// 3 curated sample profiles — CL11 Analyst, CL9 Consultant, CL8 Associate Manager
+const SAMPLE_IDS = ["C07", "C01", "C04"];
+// C07: Grace Koh — CL11 Analyst, Healthcare/Gov, structured, onsite
 // C01: Alice Tan — CL9 Consultant, ML/Python, Banking/Tech, hybrid
-// C08: Henry Ong — CL9 Consultant, Cybersecurity, Banking/Gov, structured
-// C15: Olivia Tan — CL7 Senior Manager, Strategy/M&A, Banking/PE, onsite
+// C04: David Ng — CL8 Associate Manager, Strategy/BA, Banking/Insurance, hybrid
 
 export default function LoginScreen({ onLogin }) {
   const [role, setRole] = useState("landing"); // landing | consultant-choice | onboarding | existing | manager
@@ -144,11 +144,11 @@ export default function LoginScreen({ onLogin }) {
                   ))}
                 </optgroup>
               )}
-              <optgroup label="Sample Profiles">
+              <>
                 {consultants.map(c => (
                   <option key={c.id} value={c.id}>{c.name} (CL{c.cl} {c.cl_title})</option>
                 ))}
-              </optgroup>
+              </>
             </select>
           </div>
 

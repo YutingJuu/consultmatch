@@ -28,8 +28,8 @@ const LEVELS = [
   { label: "CL11 Analyst", value: "Analyst", cl: 11 },
   { label: "CL10 Senior Analyst", value: "Senior Analyst", cl: 10 },
   { label: "CL9 Consultant", value: "Consultant", cl: 9 },
-  { label: "CL8 Manager", value: "Manager", cl: 8 },
-  { label: "CL7 Senior Manager", value: "Senior Manager", cl: 7 },
+  { label: "CL8 Associate Manager", value: "Associate Manager", cl: 8 },
+  { label: "CL7 Manager", value: "Manager", cl: 7 },
 ];
 
 const STEPS = ["About You", "Your Skills", "Upload CV", "Your Preferences", "Review"];
