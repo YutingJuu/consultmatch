@@ -18,7 +18,8 @@ export default function ManagerView({ projectId, customProject }) {
   const [expandedRole, setExpandedRole] = useState(null);
   const [error, setError] = useState(null);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
-  const [expressedInterest, setExpressedInterest] = useState(new Set()); // "roleId:consultantId"
+  const [expressedInterest, setExpressedInterest] = useState(new Set());
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     setError(null);
@@ -104,29 +105,58 @@ export default function ManagerView({ projectId, customProject }) {
   }, [projectId, customProject]);
 
   const expressInterest = async (c, role) => {
-    const key = `${getRoleId(role)}:${c.id}`;
+    const key = getRoleId(role) + ":" + c.id;
+    const managerName = project?.manager_name || "Project Manager";
+    const projectName = project?.name || role.project_name;
+    const client = project?.client || role.client;
+    const roleTitle = role.role_title || role.role;
+    const email = c.email || (c.name.toLowerCase().replace(" ", ".") + "@accenture.com");
+
+    const firstName = c.name.split(" ")[0];
+    const subject = encodeURIComponent(
+      `${roleTitle} opportunity — ${projectName} (${client})`
+    );
+    const body = encodeURIComponent(
+`Hi ${firstName},
+
+I'm ${managerName}, PM for the ${projectName} project at ${client}. I came across your profile and think you'd be a strong fit for the ${roleTitle} role we're currently staffing.
+
+Quick details:
+- Start: ${role.start_date}
+- Duration: ${role.duration}
+- Location: ${role.district} (${role.wfh_policy})
+
+Would you be open to a quick 15-min chat this week to see if it's a good fit? Happy to share more about the project scope.
+
+Thanks,
+${managerName}`
+    );
+
+    // Open email client with pre-filled draft
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+
+    // Mark as expressed in local state
+    setExpressedInterest(prev => new Set([...prev, key]));
+
+    // Also record in backend so consultant sees it
     try {
       await axios.post(`${API}/express-interest`, {
         consultant_id: c.id,
         role_id: getRoleId(role),
-        manager_name: project?.manager_name || "Project Manager",
-        project_name: project?.name || role.project_name,
-        client: project?.client || role.client,
-        role_title: role.role_title || role.role,
+        manager_name: managerName,
+        project_name: projectName,
+        client: client,
+        role_title: roleTitle,
         cl_label: role.cl_label,
-        district: project?.district || role.district,
-        industry: project?.industry || role.industry,
+        district: role.district,
+        industry: role.industry,
       });
-      setExpressedInterest(prev => new Set([...prev, key]));
-      // Refresh candidates for this role
-      const roleId = getRoleId(role);
-      if (!customProject) {
-        axios.get(`${API}/roles/${roleId}/candidates`)
-          .then(res => setRolesCandidates(prev => ({ ...prev, [roleId]: res.data })));
-      }
     } catch (e) {
-      console.error("Express interest failed", e);
+      console.error("Backend record failed", e);
     }
+
+    setToast(`Email draft opened for ${c.name}`);
+    setTimeout(() => setToast(null), 3000);
   };
 
   const proposeTeam = async () => {
@@ -233,7 +263,7 @@ export default function ManagerView({ projectId, customProject }) {
             <span className="applicants-banner-icon">📬</span>
             <div>
               <strong>{totalApplicants} consultant{totalApplicants > 1 ? "s have" : " has"} applied to roles in this project</strong>
-              <p>Applicants are highlighted with ✅ in the candidate list below. You can view their tailored CV before running the matching algorithm.</p>
+              <p>Applicants are highlighted with ✅ in the candidate list below. You can view their submitted CV before running the matching algorithm.</p>
             </div>
           </div>
         );
@@ -390,7 +420,7 @@ export default function ManagerView({ projectId, customProject }) {
           <div className="modal-card">
             <div className="modal-header">
               <div>
-                <h3>{viewingCV.name}'s Submitted CV</h3>
+                <h3>{viewingCV.name}'s CV</h3>
                 <p>CL{viewingCV.cl} {viewingCV.cl_title}
                   {viewingCV.application_status && ` · ${viewingCV.application_status}`}
                 </p>
@@ -399,7 +429,25 @@ export default function ManagerView({ projectId, customProject }) {
             </div>
             <div className="modal-body">
               {viewingCV.cv_text
-                ? <pre className="cv-display">{viewingCV.cv_text}</pre>
+                ? <div className="cv-display">
+                    {viewingCV.cv_text.split("\n").map((line, i) => {
+                      // Render **bold** text
+                      const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                      const rendered = parts.map((part, j) =>
+                        part.startsWith("**") && part.endsWith("**")
+                          ? <strong key={j}>{part.slice(2,-2)}</strong>
+                          : part
+                      );
+                      // Detect headers (bold-only lines) vs bullet lines vs blank
+                      const isBold = line.trim().startsWith("**") && line.trim().endsWith("**");
+                      const isBullet = line.trim().startsWith("- ") || line.trim().startsWith("• ");
+                      const isBlank = line.trim() === "" || line.trim() === "---";
+                      if (isBlank) return <div key={i} style={{height:"10px"}} />;
+                      if (isBold) return <p key={i} className="cv-line-header">{rendered}</p>;
+                      if (isBullet) return <p key={i} className="cv-line-bullet">{rendered}</p>;
+                      return <p key={i} className="cv-line">{rendered}</p>;
+                    })}
+                  </div>
                 : <p className="empty-msg">No CV submitted with this application.</p>}
             </div>
             <div className="modal-footer">
@@ -421,6 +469,11 @@ export default function ManagerView({ projectId, customProject }) {
           </div>
         </div>
       )}
+      {toast && (
+        <div className="toast-notification">
+          ⭐ {toast}
+        </div>
+      )}
     </div>
   );
 }
@@ -437,7 +490,7 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
           <span className="tag">{c.cl_title}</span>
           {c.has_applied && <span className="signal-badge applied">✅ Applied</span>}
           {!c.has_applied && c.has_liked && <span className="signal-badge liked">❤️ Saved role</span>}
-          {alreadyExpressed && <span className="signal-badge approached">📤 Interest Expressed</span>}
+          {alreadyExpressed && <span className="signal-badge approached">✉️ Email Sent</span>}
         </div>
         <div className="candidate-email">📧 {c.email || `${c.name.toLowerCase().replace(" ",".")  }@accenture.com`}</div>
         <div className="skills-row" style={{marginTop:"6px"}}>
@@ -462,7 +515,7 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
         )}
         {!c.has_applied && !alreadyExpressed && (
           <button className="express-btn" onClick={onExpressInterest}>
-            ⭐ Express Interest
+            ✉️ Contact Consultant
           </button>
         )}
       </div>

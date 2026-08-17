@@ -221,7 +221,7 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
               <div className="review-banner">
                 <span>{tailorMode === "ai" ? "🤖" : "⚙️"}</span>
                 <div>
-                  <strong>CV tailored for {role.role_title}</strong>
+                  <strong>CV prepared for {role.role_title}</strong>
                   <p>Review and edit the tailored experience section below before submitting.</p>
                 </div>
                 <span className="tailor-mode-badge">{tailorMode === "ai" ? "AI ✨" : "Rule-based ⚙️"}</span>
@@ -246,7 +246,7 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
             <div className="submitted-screen">
               <div className="submitted-icon">✅</div>
               <h4>Application Submitted!</h4>
-              <p>Your tailored CV has been sent to <strong>{role.manager_name}</strong>, the project manager for <strong>{role.role_title}</strong> at {role.client}.</p>
+              <p>Your CV has been submitted to <strong>{role.manager_name}</strong>, the project manager for <strong>{role.role_title}</strong> at {role.client}.</p>
               <p className="submitted-note" style={{marginTop:"12px"}}>
                 Further communication will be conducted directly with the project manager. Good luck!
               </p>

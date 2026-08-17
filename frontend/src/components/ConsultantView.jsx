@@ -49,14 +49,18 @@ export default function ConsultantView({ consultantId, customProfile }) {
       });
     }
     axios.get(`${API}/likes/${consultantId}`).then(r => setLikes(r.data.liked || []));
-    axios.get(`${API}/applications/${consultantId}`).then(r => {
-      setApplications(r.data);
-      setAppliedIds(new Set(r.data.map(a => a.role_id)));
-    }).catch(() => {});
+    fetchApplications();
 
   }, [consultantId, isCustom]);
 
 
+
+  const fetchApplications = () => {
+    axios.get(`${API}/applications/${consultantId}`).then(r => {
+      setApplications(r.data);
+      setAppliedIds(new Set(r.data.map(a => a.role_id)));
+    }).catch(() => {});
+  };
 
   const toggleLike = async (roleId) => {
     const r = await axios.post(`${API}/likes`,
@@ -174,11 +178,16 @@ export default function ConsultantView({ consultantId, customProfile }) {
             {/* My Applications tab */}
       {tab === "applications" && (
         <div className="applications-panel">
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:"8px"}}>
+            <button className="refresh-btn" onClick={fetchApplications}>
+              ↺ Refresh
+            </button>
+          </div>
           {applications.length === 0
             ? <div className="empty-state">
                 <p>📋</p>
                 <p>No applications yet.</p>
-                <p>Browse roles and click Apply to get started.</p>
+                <p>Browse roles and click Apply, or a manager may reach out to you.</p>
               </div>
             : applications.map((a, idx) => {
                 const STATUS_CONFIG = {
