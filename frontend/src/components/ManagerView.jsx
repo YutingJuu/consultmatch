@@ -17,6 +17,7 @@ export default function ManagerView({ projectId, customProject }) {
   const [viewingCV, setViewingCV] = useState(null);
   const [expandedRole, setExpandedRole] = useState(null);
   const [error, setError] = useState(null);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
 
   useEffect(() => {
     setError(null);
@@ -38,6 +39,7 @@ export default function ManagerView({ projectId, customProject }) {
       setProjectRoles(roles);
 
       // Fetch all consultants, then score each against each slot via batch endpoint
+      setLoadingCandidates(true);
       axios.get(`${API}/consultants`).then(async r => {
         const allConsultants = r.data;
         for (const slot of slots) {
@@ -62,6 +64,7 @@ export default function ManagerView({ projectId, customProject }) {
           scored.sort((a, b) => b.score.total - a.score.total);
           setRolesCandidates(prev => ({ ...prev, [slot.slot_id]: scored }));
         }
+        setLoadingCandidates(false);
       });
     } else {
       axios.get(`${API}/projects/${projectId}`)
@@ -189,8 +192,17 @@ export default function ManagerView({ projectId, customProject }) {
         </div>
       )}
 
+      {/* Loading state */}
+      {tab === "slots" && loadingCandidates && (
+        <div className="candidates-loading">
+          <div className="loading-spinner"/>
+          <p>Finding the best candidates for each role...</p>
+          <p className="loading-sub">Scoring {projectRoles.length} roles against consultant profiles</p>
+        </div>
+      )}
+
       {/* Slots view — one section per role */}
-      {tab === "slots" && (
+      {tab === "slots" && !loadingCandidates && (
         <div className="slots-container">
           {projectRoles.length === 0 && (
             <div className="empty-state">
