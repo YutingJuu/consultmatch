@@ -133,12 +133,8 @@ export default function ManagerView({ projectId, customProject }) {
       managerName;
     const body = encodeURIComponent(bodyText);
 
-    // Open email client with pre-filled draft (anchor click is more reliable than window.open)
-    const mailLink = document.createElement("a");
-    mailLink.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
-    document.body.appendChild(mailLink);
-    mailLink.click();
-    document.body.removeChild(mailLink);
+    // Use location.href for mailto — most reliable on Edge + Outlook (corporate setup)
+    window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
 
     // Mark as expressed in local state
     setExpressedInterest(prev => new Set([...prev, key]));
