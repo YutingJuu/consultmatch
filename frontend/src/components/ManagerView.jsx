@@ -515,19 +515,8 @@ export default function ManagerView({ projectId, customProject }) {
                 : <p className="empty-msg">No CV submitted with this application.</p>}
             </div>
             <div className="modal-footer">
-              <button className="modal-btn secondary"
-                onClick={() => {
-                  updateStatus(viewingCV.id, viewingCV.roleId, "Shortlisted");
-                  setViewingCV(null);
-                }}>
-                ✅ Shortlist
-              </button>
-              <button className="modal-btn secondary"
-                onClick={() => {
-                  updateStatus(viewingCV.id, viewingCV.roleId, "Not Selected");
-                  setViewingCV(null);
-                }}>
-                ✗ Not Selected
+              <button className="modal-btn secondary" onClick={() => setViewingCV(null)}>
+                Close
               </button>
             </div>
           </div>
