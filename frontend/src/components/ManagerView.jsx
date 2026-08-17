@@ -177,7 +177,17 @@ export default function ManagerView({ projectId, customProject }) {
         setTab("proposed");
       } else {
         const r = await axios.post(`${API}/projects/${projectId}/propose-team`);
-        setProposedTeam(r.data.proposed_team);
+        // Enrich proposed candidates with fresh has_applied/cv_text from rolesCandidates
+        const enriched = r.data.proposed_team.map(({ role, proposed }) => {
+          const freshCandidates = rolesCandidates[getRoleId(role)] || [];
+          const enrichedProposed = proposed.map(c => {
+            if (!c) return c;
+            const fresh = freshCandidates.find(fc => fc.id === c.id);
+            return fresh ? { ...c, has_applied: fresh.has_applied, cv_text: fresh.cv_text, application_status: fresh.application_status } : { ...c, has_applied: false, cv_text: "" };
+          });
+          return { role, proposed: enrichedProposed };
+        });
+        setProposedTeam(enriched);
         setTab("proposed");
       }
     } catch (e) {
@@ -265,7 +275,7 @@ export default function ManagerView({ projectId, customProject }) {
             <span className="applicants-banner-icon">📬</span>
             <div>
               <strong>{totalApplicants} consultant{totalApplicants > 1 ? "s have" : " has"} applied to roles in this project</strong>
-              <p>Applicants are highlighted with ✅ in the candidate list below. You can view their submitted CV before running the matching algorithm.</p>
+              <p>Applicants are highlighted with ✅ in the candidate list below. View their CV and reach out directly if interested.</p>
             </div>
           </div>
         );
