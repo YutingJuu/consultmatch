@@ -120,20 +120,23 @@ def get_role(role_id: str):
 def get_role_candidates(role_id: str):
     r = _r_lookup.get(role_id)
     if not r: raise HTTPException(404, "Not found")
-    applicant_by_cid = {
-        cid: a for cid, apps in _applications.items()
-        for a in apps if a["role_id"] == role_id
-    }
+    # Build lookup: consultant_id -> application for THIS specific role
+    applicant_by_cid = {}
+    for cid, apps in _applications.items():
+        for a in apps:
+            if a["role_id"] == role_id and not a.get("manager_initiated"):
+                applicant_by_cid[cid] = a
     liked_by = {cid for cid, rids in _likes.items() if role_id in rids}
     candidates = []
     for c in rank_consultants_for_role(r, get_all_consultants()):
         cid = c["id"]
+        app = applicant_by_cid.get(cid, {})
         candidates.append({
             **c,
             "has_applied": cid in applicant_by_cid,
             "has_liked": cid in liked_by,
-            "cv_text": applicant_by_cid.get(cid, {}).get("cv_text",""),
-            "application_status": applicant_by_cid.get(cid, {}).get("status",""),
+            "cv_text": app.get("cv_text", ""),
+            "application_status": app.get("status", ""),
         })
     return candidates
 
