@@ -9,7 +9,7 @@ from typing import Optional
 import os, httpx
 
 from data.synthetic import CONSULTANTS, PROJECTS, ROLES
-from scoring import compute_score, rank_roles_for_consultant, rank_consultants_for_role
+from scoring import compute_score, rank_roles_for_consultant, rank_consultants_for_role, cl_eligible
 
 app = FastAPI(title="ConsultMatch API", version="3.0.0")
 
@@ -101,8 +101,7 @@ def get_consultant(consultant_id: str):
 def get_recommendations(consultant_id: str):
     c = get_c_lookup().get(consultant_id)
     if not c: raise HTTPException(404, "Not found")
-    c_cl = c.get("cl", 9)
-    eligible_roles = [r for r in ROLES if r["cl_range"][0] <= c_cl <= r["cl_range"][1]]
+    eligible_roles = [r for r in ROLES if cl_eligible(c, r)]
     return rank_roles_for_consultant(c, eligible_roles)
 
 
@@ -370,10 +369,9 @@ class BatchScoreRequest(BaseModel):
 @app.post("/score/custom/batch")
 def batch_score_custom(request: BatchScoreRequest):
     """Score a custom consultant against eligible roles (CL-filtered) in one call."""
-    c_cl = request.consultant.get("cl", 9)
-    eligible_roles = [r for r in ROLES if r["cl_range"][0] <= c_cl <= r["cl_range"][1]]
+    eligible = [r for r in ROLES if cl_eligible(request.consultant, r)]
     results = []
-    for role in eligible_roles:
+    for role in eligible:
         score = compute_score(request.consultant, role)
         results.append({**role, "score": score})
     results.sort(key=lambda x: x["score"]["total"], reverse=True)

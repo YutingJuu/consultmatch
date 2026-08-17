@@ -60,7 +60,7 @@ export default function ManagerView({ projectId, customProject }) {
 
         for (const slot of slots) {
           const [cl_min, cl_max] = slot.cl_range;
-          const eligible = allConsultants.filter(c => c.cl >= cl_min && c.cl <= cl_max);
+          const eligible = allConsultants.filter(c => c.cl >= cl_min && c.cl <= cl_max); // hard CL filter
           const roleForScoring = roles.find(ro => ro.slot_id === slot.slot_id);
           const scored = await Promise.all(eligible.map(async c => {
             try {
@@ -401,8 +401,8 @@ function CandidateCard({ c, idx, requiredSkills, onViewCV, onUpdateStatus }) {
         {c.score && (
           <div className="score-breakdown" style={{marginTop:"6px"}}>
             <span>Skills {c.score.breakdown.skills}/40</span>
-            <span>Preferences {c.score.breakdown.preference}/40</span>
-            <span>CL Fit {c.score.breakdown.cl}/20</span>
+            <span>Prefs {c.score.breakdown.preference}/40</span>
+            <span>Avail {c.score.breakdown.availability}/20</span>
           </div>
         )}
       </div>
