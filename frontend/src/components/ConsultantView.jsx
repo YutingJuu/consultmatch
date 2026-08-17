@@ -52,13 +52,13 @@ export default function ConsultantView({ consultantId, customProfile }) {
 
   const toggleLike = async (roleId) => {
     const r = await axios.post(`${API}/likes`,
-      { consultant_id: consultantId, role_id: roleId });
+      { consultant_id: consultantId, role_id: roleId }); // roleId is already resolved by caller
     setLikes(prev => r.data.status === "liked"
       ? [...prev, roleId] : prev.filter(id => id !== roleId));
   };
 
   const onApplied = (roleId, cvText) => {
-    const role = displayList.find(x => x.role_id === roleId);
+    const role = displayList.find(x => (x.role_id || x.slot_id) === roleId);
     if (role) {
       setApplications(prev => [...prev, {
         role_id: roleId,
@@ -152,10 +152,10 @@ export default function ConsultantView({ consultantId, customProfile }) {
             </div>
           )}
           {displayList.map((role, i) => (
-            <RoleCard key={role.role_id} role={role} rank={scoresUnlocked ? i+1 : null}
-              liked={likes.includes(role.role_id)}
-              applied={appliedIds.has(role.role_id)}
-              onLike={() => toggleLike(role.role_id)}
+            <RoleCard key={role.role_id || role.slot_id} role={role} rank={scoresUnlocked ? i+1 : null}
+              liked={likes.includes(role.role_id || role.slot_id)}
+              applied={appliedIds.has(role.role_id || role.slot_id)}
+              onLike={() => toggleLike(role.role_id || role.slot_id)}
               onApply={() => setApplyingTo(role)} />
           ))}
         </div>
@@ -171,9 +171,9 @@ export default function ConsultantView({ consultantId, customProfile }) {
                 <p>Click the heart on any role card to save it here.</p>
               </div>
             : likedRoles.map(role => (
-                <RoleCard key={role.role_id} role={role}
-                  liked={true} applied={appliedIds.has(role.role_id)}
-                  onLike={() => toggleLike(role.role_id)}
+                <RoleCard key={role.role_id || role.slot_id} role={role}
+                  liked={true} applied={appliedIds.has(role.role_id || role.slot_id)}
+                  onLike={() => toggleLike(role.role_id || role.slot_id)}
                   onApply={() => setApplyingTo(role)} />
               ))
           }

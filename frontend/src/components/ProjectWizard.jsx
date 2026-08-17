@@ -7,11 +7,11 @@ const INDUSTRIES = [
 ];
 
 const DISTRICTS = [
-  "D01 Raffles Place / Cecil", "D02 Shenton Way / Tanjong Pagar", "D03 Marina Bay",
-  "D06 City Hall / Clarke Quay", "D09 Orchard / River Valley", "D11 Novena / Thomson",
-  "D05 One-North / Buona Vista", "D22 Jurong / Clementi", "D23 Jurong / Bukit Batok",
-  "D18 Tampines / Pasir Ris", "D14 Paya Lebar / Macpherson", "D19 Serangoon / Hougang",
-  "D25 Woodlands / Kranji", "D27 Yishun / Sembawang", "D20 Bishan / Ang Mo Kio",
+  "Raffles Place / Cecil", "Shenton Way / Tanjong Pagar", "Marina Bay",
+  "City Hall / Clarke Quay", "Orchard / River Valley", "Novena / Thomson",
+  "One-North / Buona Vista", "Jurong / Clementi", "Jurong / Bukit Batok",
+  "Tampines / Pasir Ris", "Paya Lebar / Macpherson", "Serangoon / Hougang",
+  "Woodlands / Kranji", "Yishun / Sembawang", "Bishan / Ang Mo Kio",
 ];
 
 // CL7 = most senior (Manager), CL11 = most junior (Analyst)

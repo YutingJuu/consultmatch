@@ -55,6 +55,13 @@ class CustomProfile(BaseModel):
 class ApplicationRequest(BaseModel):
     consultant_id: str; role_id: str
     cv_text: Optional[str] = ""
+    # Optional metadata for custom project slots
+    role_title: Optional[str] = None
+    project_name: Optional[str] = None
+    client: Optional[str] = None
+    industry: Optional[str] = None
+    district: Optional[str] = None
+    cl_label: Optional[str] = None
 
 class LikeRequest(BaseModel):
     consultant_id: str; role_id: str
@@ -209,6 +216,13 @@ def apply_to_role(req: ApplicationRequest):
         "status": "Applied",
         "cv_text": req.cv_text,
         "applied_at": datetime.utcnow().isoformat(),
+        # Store metadata for custom slots
+        "role_title": req.role_title,
+        "project_name": req.project_name,
+        "client": req.client,
+        "industry": req.industry,
+        "district": req.district,
+        "cl_label": req.cl_label,
     })
     return {"status": "ok"}
 
@@ -226,6 +240,16 @@ def get_applications(consultant_id: str):
                 "industry": r["industry"],
                 "district": r.get("district","Singapore"),
                 "cl_label": r["cl_label"],
+            })
+        else:
+            # Custom project slot — show with stored info
+            enriched.append({**a,
+                "role_title": a.get("role_title", "Role"),
+                "project_name": a.get("project_name", "Custom Project"),
+                "client": a.get("client", "—"),
+                "industry": a.get("industry", "—"),
+                "district": a.get("district", "Singapore"),
+                "cl_label": a.get("cl_label", "—"),
             })
     return enriched
 

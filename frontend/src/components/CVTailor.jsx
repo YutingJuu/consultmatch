@@ -26,6 +26,8 @@ MSc Business Analytics, NUS – AI & Analytics Projects
 • Built an agentic AI pet health assistant using multi-step reasoning, dual RAG, and LLM-based decision support.`;
 
 export default function CVTailor({ role, consultantProfile, consultantId, onClose, onApplied }) {
+  // Custom project slots use slot_id, backend roles use role_id
+  const roleId = role.role_id || role.slot_id;
   const hasProfileCV = !!(
     (consultantProfile?.cvText && !consultantProfile.cvText.startsWith("[PDF")) ||
     consultantProfile?.cvFileBase64 ||
@@ -71,8 +73,8 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
     setLoading(true); setError("");
     try {
       const payload = fileData
-        ? { role_id: role.role_id, file_base64: fileData.base64, file_name: fileData.name }
-        : { role_id: role.role_id, cv_text: cvText };
+        ? { role_id: roleId, file_base64: fileData.base64, file_name: fileData.name }
+        : { role_id: roleId, cv_text: cvText };
       const response = await axios.post(`${API}/tailor`, payload);
       setTailoredText(response.data.tailored_text);
       setTailorMode(response.data.mode);
@@ -87,10 +89,17 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
     try {
       await axios.post(`${API}/applications`, {
         consultant_id: consultantId,
-        role_id: role.role_id,
+        role_id: roleId,
         cv_text: tailoredText,
+        // Store metadata for custom project slots (not in backend _r_lookup)
+        role_title: role.role_title || role.role,
+        project_name: role.project_name,
+        client: role.client,
+        industry: role.industry,
+        district: role.district,
+        cl_label: role.cl_label,
       });
-      if (onApplied) onApplied(role.role_id, tailoredText);
+      if (onApplied) onApplied(roleId, tailoredText);
     } catch (e) { /* already applied */ }
     setStep("submitted");
   };
