@@ -357,12 +357,10 @@ def batch_score_custom(request: BatchScoreRequest):
 
 
 class InlineScoreRequest(BaseModel):
-    consultant_id: str
-    role: dict  # inline role definition
+    consultant: dict  # full consultant object
+    role: dict        # full role definition
 
 @app.post("/score/inline")
 def score_inline(request: InlineScoreRequest):
     """Score a consultant against an inline role definition (for custom projects)."""
-    c = get_c_lookup().get(request.consultant_id)
-    if not c: raise HTTPException(404, "Consultant not found")
-    return compute_score(c, request.role)
+    return compute_score(request.consultant, request.role)

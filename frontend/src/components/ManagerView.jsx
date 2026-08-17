@@ -46,11 +46,12 @@ export default function ManagerView({ projectId, customProject }) {
           const scored = await Promise.all(eligible.map(async c => {
             try {
               const res = await axios.post(`${API}/score/inline`, {
-                consultant_id: c.id,
+                consultant: c,
                 role: roleForScoring,
               });
               return { ...c, score: res.data, has_applied: false, has_liked: false };
-            } catch {
+            } catch (e) {
+              console.error("Score inline failed", e);
               return { ...c, score: { total: 20, breakdown: { skills: 0, preference: 0, cl: 20 } },
                         has_applied: false, has_liked: false };
             }
