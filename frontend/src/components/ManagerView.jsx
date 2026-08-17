@@ -4,6 +4,9 @@ import ScoreBadge from "./ScoreBadge";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
+// Custom project slots use slot_id, backend roles use role_id
+const getRoleId = (role) => role.role_id || role.slot_id;
+
 export default function ManagerView({ projectId, customProject }) {
   const [project, setProject] = useState(customProject || null);
   const [projectRoles, setProjectRoles] = useState([]);
@@ -82,9 +85,22 @@ export default function ManagerView({ projectId, customProject }) {
   const proposeTeam = async () => {
     setProposing(true);
     try {
-      const r = await axios.post(`${API}/projects/${projectId}/propose-team`);
-      setProposedTeam(r.data.proposed_team);
-      setTab("proposed");
+      if (customProject) {
+        // Custom project — propose team client-side from already-loaded candidates
+        const proposed = projectRoles.map(role => {
+          const candidates = rolesCandidates[getRoleId(role)] || [];
+          const used = new Set();
+          const best = candidates.find(c => !used.has(c.id));
+          if (best) used.add(best.id);
+          return { role, proposed: best ? [best] : [] };
+        });
+        setProposedTeam(proposed);
+        setTab("proposed");
+      } else {
+        const r = await axios.post(`${API}/projects/${projectId}/propose-team`);
+        setProposedTeam(r.data.proposed_team);
+        setTab("proposed");
+      }
     } catch (e) {
       setError("Failed to propose team. Please try again.");
     } finally { setProposing(false); }
@@ -142,7 +158,7 @@ export default function ManagerView({ projectId, customProject }) {
         <div className="team-composition">
           <span className="team-comp-label">Open roles:</span>
           {projectRoles.map(r => (
-            <span key={r.role_id} className="slot-chip-lg">
+            <span key={getRoleId(r)} className="slot-chip-lg">
               {r.role_title} <span className="slot-cl">({r.cl_label})</span>
             </span>
           ))}
@@ -183,12 +199,12 @@ export default function ManagerView({ projectId, customProject }) {
             </div>
           )}
           {projectRoles.map(role => {
-            const candidates = rolesCandidates[role.role_id] || [];
-            const isExpanded = expandedRole === role.role_id;
+            const candidates = rolesCandidates[getRoleId(role)] || [];
+            const isExpanded = expandedRole === getRoleId(role);
             return (
-              <div key={role.role_id} className="slot-section">
+              <div key={getRoleId(role)} className="slot-section">
                 <div className="slot-header"
-                  onClick={() => setExpandedRole(isExpanded ? null : role.role_id)}
+                  onClick={() => setExpandedRole(isExpanded ? null : getRoleId(role))}
                   style={{cursor:"pointer"}}>
                   <div>
                     <span className="slot-title">{role.role_title}</span>
@@ -213,8 +229,8 @@ export default function ManagerView({ projectId, customProject }) {
                       : candidates.slice(0, 8).map((c, idx) => (
                           <CandidateCard key={c.id} c={c} idx={idx}
                             requiredSkills={role.required_skills}
-                            onViewCV={() => setViewingCV({...c, roleId: role.role_id})}
-                            onUpdateStatus={(status) => updateStatus(c.id, role.role_id, status)} />
+                            onViewCV={() => setViewingCV({...c, roleId: getRoleId(role)})}
+                            onUpdateStatus={(status) => updateStatus(c.id, getRoleId(role), status)} />
                         ))
                     }
                   </div>
@@ -237,7 +253,7 @@ export default function ManagerView({ projectId, customProject }) {
           </div>
 
           {proposedTeam.map(({ role, proposed }) => (
-            <div key={role.role_id} className="proposed-slot">
+            <div key={getRoleId(role)} className="proposed-slot">
               <div className="slot-header">
                 <span className="slot-title">{role.role_title}</span>
                 <span className="slot-cl-badge">{role.cl_label}</span>

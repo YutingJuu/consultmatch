@@ -15,6 +15,15 @@ const DISTRICTS = [
 ];
 
 // CL7 = most senior (Manager), CL11 = most junior (Analyst)
+const COMMON_SKILLS = [
+  "Python", "Machine Learning", "SQL", "Data Visualisation", "Statistics",
+  "Business Analysis", "Agile", "Stakeholder Management", "Project Management",
+  "AWS", "Cloud Architecture", "DevOps", "Kubernetes", "NLP", "Deep Learning",
+  "UX Design", "Figma", "Cybersecurity", "Risk Management", "Compliance",
+  "SAP", "ERP", "Salesforce", "CRM", "Supply Chain", "Strategy",
+  "Change Management", "Power BI", "Tableau", "Data Governance", "Financial Modelling",
+];
+
 const CL_OPTIONS = [
   { label: "CL7 Manager", cl: 7 },
   { label: "CL8 Associate Manager", cl: 8 },
@@ -39,8 +48,9 @@ export default function ProjectWizard({ onComplete, onBack }) {
   });
   const [slots, setSlots] = useState([]);
   const [newSlot, setNewSlot] = useState({
-    role: "", cl_selected: [9, 10], description: ""
+    role: "", cl_selected: [9, 10], description: "", required_skills: []
   });
+  const [skillSearch, setSkillSearch] = useState("");
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -64,7 +74,8 @@ export default function ProjectWizard({ onComplete, onBack }) {
       required_skills: [],
       description: newSlot.description.trim() || `${newSlot.role} role for this project.`,
     }]);
-    setNewSlot({ role: "", cl_selected: [9, 10], description: "" });
+    setNewSlot({ role: "", cl_selected: [9, 10], description: "", required_skills: [] });
+    setSkillSearch("");
   };
 
   const removeSlot = (id) => setSlots(prev => prev.filter(s => s.slot_id !== id));
@@ -230,6 +241,11 @@ export default function ProjectWizard({ onComplete, onBack }) {
                         <span className="slot-cl-badge" style={{marginLeft:"8px"}}>
                           {s.cl_label}
                         </span>
+                        {s.required_skills?.length > 0 && (
+                          <span style={{fontSize:"11px",color:"#64748b",marginLeft:"8px"}}>
+                            · {s.required_skills.join(", ")}
+                          </span>
+                        )}
                       </div>
                       <button className="remove-btn" onClick={() => removeSlot(s.slot_id)}>✕</button>
                     </div>
@@ -270,6 +286,43 @@ export default function ProjectWizard({ onComplete, onBack }) {
                       Please select at least one career level.
                     </p>
                   )}
+                </div>
+
+                <div className="form-field">
+                  <label>Required skills <span className="field-note">(select all that apply)</span></label>
+                  <input className="skill-search" placeholder="Search skills..."
+                    value={skillSearch}
+                    onChange={e => setSkillSearch(e.target.value)}
+                    style={{marginBottom:"8px"}} />
+                  {newSlot.required_skills.length > 0 && (
+                    <div className="selected-skills" style={{marginBottom:"8px"}}>
+                      {newSlot.required_skills.map(s => (
+                        <span key={s} className="skill-chip selected"
+                          onClick={() => setNewSlot(n => ({
+                            ...n, required_skills: n.required_skills.filter(x => x !== s)
+                          }))}>
+                          {s} ✕
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="skill-grid">
+                    {COMMON_SKILLS
+                      .filter(s => s.toLowerCase().includes(skillSearch.toLowerCase()))
+                      .map(s => (
+                        <button key={s}
+                          className={`skill-toggle ${newSlot.required_skills.includes(s) ? "active" : ""}`}
+                          onClick={() => setNewSlot(n => ({
+                            ...n,
+                            required_skills: n.required_skills.includes(s)
+                              ? n.required_skills.filter(x => x !== s)
+                              : [...n.required_skills, s]
+                          }))}>
+                          {newSlot.required_skills.includes(s) ? "✓ " : ""}{s}
+                        </button>
+                      ))
+                    }
+                  </div>
                 </div>
 
                 <div className="form-field">
@@ -324,6 +377,11 @@ export default function ProjectWizard({ onComplete, onBack }) {
                           <span className="slot-cl-badge" style={{marginLeft:"8px"}}>
                             {s.cl_label}
                           </span>
+                          {s.required_skills?.length > 0 && (
+                            <span style={{fontSize:"11px",color:"#64748b",marginLeft:"8px"}}>
+                              · {s.required_skills.join(", ")}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
