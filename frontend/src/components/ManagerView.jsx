@@ -338,12 +338,46 @@ export default function ManagerView({ projectId, customProject }) {
                     <p className="role-desc-manager">{role.description}</p>
                     {candidates.length === 0
                       ? <p className="empty-msg">No eligible candidates found for this CL range.</p>
-                      : candidates.slice(0, 8).map((c, idx) => (
-                          <CandidateCard key={c.id} c={c} idx={idx}
-                            requiredSkills={role.required_skills}
-                            onViewCV={() => setViewingCV({...c, roleId: getRoleId(role)})}
-                            onUpdateStatus={(status) => updateStatus(c.id, getRoleId(role), status)} />
-                        ))
+                      : (() => {
+                          const applied = candidates.filter(c => c.has_applied);
+                          const recommended = candidates.filter(c => !c.has_applied).slice(0, 6);
+                          return (
+                            <>
+                              {applied.length > 0 && (
+                                <>
+                                  <div className="candidate-section-header applied-header">
+                                    📬 Applied ({applied.length})
+                                  </div>
+                                  {applied.map((c, idx) => (
+                                    <CandidateCard key={c.id} c={c} idx={idx}
+                                      requiredSkills={role.required_skills}
+                                      expressedKey={getRoleId(role) + ":" + c.id}
+                                      expressedInterest={expressedInterest}
+                                      onViewCV={() => setViewingCV({...c, roleId: getRoleId(role)})}
+                                      onExpressInterest={() => expressInterest(c, role)}
+                                      onUpdateStatus={(status) => updateStatus(c.id, getRoleId(role), status)} />
+                                  ))}
+                                </>
+                              )}
+                              {recommended.length > 0 && (
+                                <>
+                                  <div className="candidate-section-header">
+                                    🤖 Recommended ({recommended.length})
+                                  </div>
+                                  {recommended.map((c, idx) => (
+                                    <CandidateCard key={c.id} c={c} idx={idx}
+                                      requiredSkills={role.required_skills}
+                                      expressedKey={getRoleId(role) + ":" + c.id}
+                                      expressedInterest={expressedInterest}
+                                      onViewCV={() => setViewingCV({...c, roleId: getRoleId(role)})}
+                                      onExpressInterest={() => expressInterest(c, role)}
+                                      onUpdateStatus={(status) => updateStatus(c.id, getRoleId(role), status)} />
+                                  ))}
+                                </>
+                              )}
+                            </>
+                          );
+                        })()
                     }
                   </div>
                 )}
