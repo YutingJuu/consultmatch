@@ -11,6 +11,7 @@ export default function ConsultantView({ consultantId, customProfile }) {
   const [recommendations, setRecommendations] = useState([]);
   const [scoresUnlocked, setScoresUnlocked] = useState(false);
   const [loadingScores, setLoadingScores] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [likes, setLikes] = useState([]);
   const [applications, setApplications] = useState([]);
   const [applyingTo, setApplyingTo] = useState(null);
@@ -20,35 +21,37 @@ export default function ConsultantView({ consultantId, customProfile }) {
   useEffect(() => {
     if (isCustom) {
       setProfile(customProfile);
-      axios.get(`${API}/roles`).then(r => {
-        const cl = customProfile?.cl || 9;
-        const eligible = r.data.filter(role =>
-          role.cl_range[0] <= cl && cl <= role.cl_range[1]
-        );
-        setRoles(eligible);
-      });
+      // Auto-score immediately — no unlock step needed
+      setLoadingScores(true);
+      axios.post(`${API}/score/custom/batch`, { consultant: customProfile })
+        .then(r => {
+          setRecommendations(r.data);
+          setScoresUnlocked(true);
+        })
+        .catch(() => {
+          // Fallback: load unscored roles
+          const cl = customProfile?.cl || 9;
+          axios.get(`${API}/roles`).then(r2 => {
+            setRoles(r2.data.filter(role =>
+              role.cl_range[0] <= cl && cl <= role.cl_range[1]
+            ));
+          });
+        })
+        .finally(() => {
+          setLoadingScores(false);
+          setInitialLoading(false);
+        });
     } else {
       axios.get(`${API}/consultants/${consultantId}`).then(r => setProfile(r.data));
       axios.get(`${API}/consultants/${consultantId}/recommendations`).then(r => {
-        setRecommendations(r.data); setScoresUnlocked(true);
+        setRecommendations(r.data); setScoresUnlocked(true); setInitialLoading(false);
       });
     }
     axios.get(`${API}/likes/${consultantId}`).then(r => setLikes(r.data.liked || []));
     axios.get(`${API}/applications/${consultantId}`).then(r => setApplications(r.data));
   }, [consultantId, isCustom]);
 
-  const unlockScores = async () => {
-    setLoadingScores(true);
-    try {
-      // Single batch call instead of N individual calls
-      const r = await axios.post(`${API}/score/custom/batch`,
-        { consultant: customProfile });
-      setRecommendations(r.data);
-      setScoresUnlocked(true);
-    } catch (e) {
-      console.error("Failed to unlock scores", e);
-    } finally { setLoadingScores(false); }
-  };
+
 
   const toggleLike = async (roleId) => {
     const r = await axios.post(`${API}/likes`,
@@ -76,8 +79,8 @@ export default function ConsultantView({ consultantId, customProfile }) {
 
   if (!profile) return <div className="loading">Loading...</div>;
 
-  const displayList = scoresUnlocked ? recommendations : roles;
-  const likedRoles = displayList.filter(r => likes.includes(r.role_id));
+  const displayList = recommendations;
+  const likedRoles = recommendations.filter(r => likes.includes(r.role_id || r.slot_id));
   const appliedIds = new Set(applications.map(a => a.role_id));
 
   const STATUS_COLOR = {
@@ -87,21 +90,7 @@ export default function ConsultantView({ consultantId, customProfile }) {
 
   return (
     <div className="view-container">
-      {/* Unlock banner */}
-      {isCustom && !scoresUnlocked && (
-        <div className="unlock-banner">
-          <div className="unlock-banner-left">
-            <span className="unlock-icon">🔒</span>
-            <div>
-              <strong>Unlock your compatibility scores</strong>
-              <p>See how well each role matches your profile and skills.</p>
-            </div>
-          </div>
-          <button className="unlock-btn" onClick={unlockScores} disabled={loadingScores}>
-            {loadingScores ? "Calculating..." : "✨ Unlock Scores"}
-          </button>
-        </div>
-      )}
+
 
       {/* Profile card */}
       <div className="profile-card">
@@ -132,7 +121,7 @@ export default function ConsultantView({ consultantId, customProfile }) {
       <div className="tab-bar">
         <button className={tab==="browse"?"tab active":"tab"} onClick={()=>setTab("browse")}>
           🔍 Browse Roles ({displayList.length})
-          {scoresUnlocked && <span className="tab-badge">Scored</span>}
+
         </button>
         <button className={tab==="saved"?"tab active":"tab"} onClick={()=>setTab("saved")}>
           ❤️ Saved {likes.length > 0 && `(${likes.length})`}
@@ -143,14 +132,16 @@ export default function ConsultantView({ consultantId, customProfile }) {
       </div>
 
       {/* Browse tab */}
-      {tab === "browse" && (
+      {tab === "browse" && (loadingScores || initialLoading) && (
+        <div className="candidates-loading">
+          <div className="loading-spinner"/>
+          <p>Finding your best matches...</p>
+          <p className="loading-sub">Scoring roles against your profile and availability</p>
+        </div>
+      )}
+
+      {tab === "browse" && !loadingScores && !initialLoading && (
         <div className="card-list">
-          {!scoresUnlocked && (
-            <div className="unscored-notice">
-              <span>📋</span>
-              <span>Showing all {roles.length} available roles across {new Set(roles.map(r=>r.project_id)).size} projects. Unlock scores to see personalised rankings.</span>
-            </div>
-          )}
           {displayList.map((role, i) => (
             <RoleCard key={role.role_id || role.slot_id} role={role} rank={scoresUnlocked ? i+1 : null}
               liked={likes.includes(role.role_id || role.slot_id)}
@@ -264,9 +255,7 @@ function RoleCard({ role, rank, liked, applied, onLike, onApply }) {
           </div>
         </div>
         <div className="card-top-right">
-          {role.score
-            ? <ScoreBadge score={role.score.total} />
-            : <div className="score-locked">🔒 Score locked</div>}
+          {role.score && <ScoreBadge score={role.score.total} />}
           <button
             className="like-btn"
             onClick={onLike}
