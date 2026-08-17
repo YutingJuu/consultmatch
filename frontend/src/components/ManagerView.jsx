@@ -113,27 +113,32 @@ export default function ManagerView({ projectId, customProject }) {
     const email = c.email || (c.name.toLowerCase().replace(" ", ".") + "@accenture.com");
 
     const firstName = c.name.split(" ")[0];
+    const startDate = role.start_date || project?.start_date || "TBC";
+    const duration = role.duration || project?.duration || "TBC";
+    const district = role.district || project?.district || "Singapore";
+    const wfhPolicy = role.wfh_policy || project?.wfh_policy || "hybrid";
+
     const subject = encodeURIComponent(
-      `${roleTitle} opportunity — ${projectName} (${client})`
+      roleTitle + " opportunity — " + projectName + " (" + client + ")"
     );
-    const body = encodeURIComponent(
-`Hi ${firstName},
+    const bodyText = "Hi " + firstName + ",\n\n" +
+      "I\'m " + managerName + ", PM for the " + projectName + " project at " + client + ". " +
+      "I came across your profile and think you\'d be a strong fit for the " + roleTitle + " role we\'re currently staffing.\n\n" +
+      "Quick details:\n" +
+      "- Start: " + startDate + "\n" +
+      "- Duration: " + duration + "\n" +
+      "- Location: " + district + " (" + wfhPolicy + ")\n\n" +
+      "Would you be open to a quick 15-min chat this week to see if it\'s a good fit? Happy to share more about the project scope.\n\n" +
+      "Thanks,\n" +
+      managerName;
+    const body = encodeURIComponent(bodyText);
 
-I'm ${managerName}, PM for the ${projectName} project at ${client}. I came across your profile and think you'd be a strong fit for the ${roleTitle} role we're currently staffing.
-
-Quick details:
-- Start: ${role.start_date}
-- Duration: ${role.duration}
-- Location: ${role.district} (${role.wfh_policy})
-
-Would you be open to a quick 15-min chat this week to see if it's a good fit? Happy to share more about the project scope.
-
-Thanks,
-${managerName}`
-    );
-
-    // Open email client with pre-filled draft
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+    // Open email client with pre-filled draft (anchor click is more reliable than window.open)
+    const mailLink = document.createElement("a");
+    mailLink.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
+    document.body.appendChild(mailLink);
+    mailLink.click();
+    document.body.removeChild(mailLink);
 
     // Mark as expressed in local state
     setExpressedInterest(prev => new Set([...prev, key]));
@@ -513,9 +518,9 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
         {c.has_applied && (
           <button className="view-cv-btn" onClick={onViewCV}>View CV</button>
         )}
-        {!c.has_applied && !alreadyExpressed && (
+        {!alreadyExpressed && (
           <button className="express-btn" onClick={onExpressInterest}>
-            ✉️ Contact Consultant
+            ✉️ Contact
           </button>
         )}
       </div>
