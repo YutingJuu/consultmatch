@@ -19,7 +19,14 @@ export default function ConsultantView({ consultantId, customProfile }) {
   const [tab, setTab] = useState("browse");
   const isCustom = !!customProfile;
 
-  useEffect(() => {
+  const fetchApplications = () => {
+    axios.get(`${API}/applications/${consultantId}`).then(r => {
+      setApplications(r.data);
+      setAppliedIds(new Set(r.data.map(a => a.role_id)));
+    }).catch(() => {});
+  };
+
+    useEffect(() => {
     if (isCustom) {
       setProfile(customProfile);
       // Auto-score immediately — no unlock step needed
@@ -33,9 +40,10 @@ export default function ConsultantView({ consultantId, customProfile }) {
           // Fallback: load unscored roles
           const cl = customProfile?.cl || 9;
           axios.get(`${API}/roles`).then(r2 => {
-            setRoles(r2.data.filter(role =>
+            const eligible = r2.data.filter(role =>
               role.cl_range[0] <= cl && cl <= role.cl_range[1]
-            ));
+            );
+            setRecommendations(eligible);
           });
         })
         .finally(() => {
@@ -46,7 +54,7 @@ export default function ConsultantView({ consultantId, customProfile }) {
       axios.get(`${API}/consultants/${consultantId}`).then(r => setProfile(r.data));
       axios.get(`${API}/consultants/${consultantId}/recommendations`).then(r => {
         setRecommendations(r.data); setScoresUnlocked(true); setInitialLoading(false);
-      });
+      }).catch(() => setInitialLoading(false));
     }
     axios.get(`${API}/likes/${consultantId}`).then(r => setLikes(r.data.liked || []));
     fetchApplications();
@@ -54,13 +62,6 @@ export default function ConsultantView({ consultantId, customProfile }) {
   }, [consultantId, isCustom]);
 
 
-
-  const fetchApplications = () => {
-    axios.get(`${API}/applications/${consultantId}`).then(r => {
-      setApplications(r.data);
-      setAppliedIds(new Set(r.data.map(a => a.role_id)));
-    }).catch(() => {});
-  };
 
   const toggleLike = async (roleId) => {
     const r = await axios.post(`${API}/likes`,
@@ -271,6 +272,8 @@ function RoleCard({ role, rank, liked, applied, onLike, onApply }) {
         <span>📍 {role.district}</span>
         <span>🏠 {role.wfh_policy}</span>
         <span>⏱ {role.duration}</span>
+        {role.start_date && <span>🗓 Starts {role.start_date}</span>}
+        {role.manager_name && <span>👤 {role.manager_name}</span>}
       </div>
 
       {role.score && (
@@ -278,7 +281,7 @@ function RoleCard({ role, rank, liked, applied, onLike, onApply }) {
           <div className="score-breakdown">
             <span>Skills {role.score.breakdown.skills}/40</span>
             <span>Preferences {role.score.breakdown.preference}/40</span>
-            <span>CL Fit {role.score.breakdown.cl}/20</span>
+            <span>Availability {role.score.breakdown.availability}/20</span>
           </div>
           <div className="skill-match-row">
             {role.required_skills.map(s => {

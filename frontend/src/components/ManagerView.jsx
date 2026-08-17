@@ -20,6 +20,7 @@ export default function ManagerView({ projectId, customProject }) {
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [expressedInterest, setExpressedInterest] = useState(new Set());
   const [toast, setToast] = useState(null);
+  const [mailtoHref, setMailtoHref] = useState(null);
 
   useEffect(() => {
     setError(null);
@@ -133,8 +134,8 @@ export default function ManagerView({ projectId, customProject }) {
       managerName;
     const body = encodeURIComponent(bodyText);
 
-    // Use location.href for mailto — most reliable on Edge + Outlook (corporate setup)
-    window.location.href = "mailto:" + email + "?subject=" + subject + "&body=" + body;
+    // Set mailto href in state — rendered as real <a> tag in JSX
+    setMailtoHref("mailto:" + email + "?subject=" + subject + "&body=" + body);
 
     // Mark as expressed in local state
     setExpressedInterest(prev => new Set([...prev, key]));
@@ -394,7 +395,13 @@ export default function ManagerView({ projectId, customProject }) {
                           ))}
                         </div>
                       </div>
-                      {c.score && <ScoreBadge score={c.score.total} small />}
+                      <div style={{display:"flex",flexDirection:"column",gap:"6px",alignItems:"flex-end"}}>
+                        {c.score && <ScoreBadge score={c.score.total} small />}
+                        <button className="express-btn"
+                          onClick={() => expressInterest(c, role)}>
+                          ✉️ Contact
+                        </button>
+                      </div>
                     </div>
                   ))
               }
@@ -475,8 +482,26 @@ export default function ManagerView({ projectId, customProject }) {
           ⭐ {toast}
         </div>
       )}
+
+      {/* Hidden mailto anchor — triggered when manager clicks Contact */}
+      {mailtoHref && (
+        <MailtoTrigger href={mailtoHref} onDone={() => setMailtoHref(null)} />
+      )}
     </div>
   );
+}
+
+function MailtoTrigger({ href, onDone }) {
+  React.useEffect(() => {
+    const link = document.createElement("a");
+    link.href = href;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    onDone();
+  }, [href]);
+  return null;
 }
 
 function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest, onViewCV, onExpressInterest, onUpdateStatus }) {
