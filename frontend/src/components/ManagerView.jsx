@@ -18,6 +18,7 @@ export default function ManagerView({ projectId, customProject }) {
   const [expandedRole, setExpandedRole] = useState(null);
   const [error, setError] = useState(null);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [expressedInterest, setExpressedInterest] = useState(new Set()); // "roleId:consultantId"
 
   useEffect(() => {
     setError(null);
@@ -101,6 +102,32 @@ export default function ManagerView({ projectId, customProject }) {
         .catch(() => setError("Failed to load roles."));
     }
   }, [projectId, customProject]);
+
+  const expressInterest = async (c, role) => {
+    const key = `${getRoleId(role)}:${c.id}`;
+    try {
+      await axios.post(`${API}/express-interest`, {
+        consultant_id: c.id,
+        role_id: getRoleId(role),
+        manager_name: project?.manager_name || "Project Manager",
+        project_name: project?.name || role.project_name,
+        client: project?.client || role.client,
+        role_title: role.role_title || role.role,
+        cl_label: role.cl_label,
+        district: project?.district || role.district,
+        industry: project?.industry || role.industry,
+      });
+      setExpressedInterest(prev => new Set([...prev, key]));
+      // Refresh candidates for this role
+      const roleId = getRoleId(role);
+      if (!customProject) {
+        axios.get(`${API}/roles/${roleId}/candidates`)
+          .then(res => setRolesCandidates(prev => ({ ...prev, [roleId]: res.data })));
+      }
+    } catch (e) {
+      console.error("Express interest failed", e);
+    }
+  };
 
   const proposeTeam = async () => {
     setProposing(true);
@@ -195,6 +222,30 @@ export default function ManagerView({ projectId, customProject }) {
           🎯 Proposed Team {proposedTeam && `(${proposedTeam.length} slots)`}
         </button>
       </div>
+
+      {/* Applicants summary for existing projects */}
+      {tab === "slots" && !customProject && (() => {
+        const totalApplicants = Object.values(rolesCandidates)
+          .flat().filter(c => c.has_applied).length;
+        if (totalApplicants === 0) return null;
+        return (
+          <div className="applicants-banner">
+            <span className="applicants-banner-icon">📬</span>
+            <div>
+              <strong>{totalApplicants} consultant{totalApplicants > 1 ? "s have" : " has"} applied to roles in this project</strong>
+              <p>Applicants are highlighted with ✅ in the candidate list below. You can view their tailored CV before running the matching algorithm.</p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* No applicants note for custom projects */}
+      {tab === "slots" && customProject && (
+        <div className="no-applicants-note">
+          <span>💡</span>
+          <span>This is a newly created project — no consultants have applied yet. The system will recommend candidates based on skills, preferences, and availability.</span>
+        </div>
+      )}
 
       {/* Propose bar */}
       {tab === "slots" && (
@@ -302,6 +353,7 @@ export default function ManagerView({ projectId, customProject }) {
                           {c.has_applied && <span className="signal-badge applied">✅ Applied</span>}
                           {!c.has_applied && c.has_liked && <span className="signal-badge liked">❤️ Interested</span>}
                         </div>
+                        <div className="candidate-email">📧 {c.email || `${c.name.toLowerCase().replace(" ",".")}@accenture.com`}</div>
                         <div className="skills-row" style={{marginTop:"6px"}}>
                           {c.skills?.map(s => (
                             <span key={s} className={`skill-chip ${
@@ -373,24 +425,21 @@ export default function ManagerView({ projectId, customProject }) {
   );
 }
 
-function CandidateCard({ c, idx, requiredSkills, onViewCV, onUpdateStatus }) {
+function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest, onViewCV, onExpressInterest, onUpdateStatus }) {
+  const alreadyExpressed = expressedInterest?.has(expressedKey);
   return (
-    <div className="candidate-card">
+    <div className={`candidate-card ${c.has_applied ? "applied-card" : ""}`}>
       <div className="candidate-rank">#{idx+1}</div>
       <div className="candidate-info">
         <div className="candidate-name-row">
           <strong>{c.name}</strong>
           <span className="tag cl-tag">CL{c.cl}</span>
           <span className="tag">{c.cl_title}</span>
-          {c.has_applied && (
-            <span className="signal-badge applied">
-              ✅ Applied{c.application_status ? ` · ${c.application_status}` : ""}
-            </span>
-          )}
-          {!c.has_applied && c.has_liked && (
-            <span className="signal-badge liked">❤️ Interested</span>
-          )}
+          {c.has_applied && <span className="signal-badge applied">✅ Applied</span>}
+          {!c.has_applied && c.has_liked && <span className="signal-badge liked">❤️ Saved role</span>}
+          {alreadyExpressed && <span className="signal-badge approached">📤 Interest Expressed</span>}
         </div>
+        <div className="candidate-email">📧 {c.email || `${c.name.toLowerCase().replace(" ",".")  }@accenture.com`}</div>
         <div className="skills-row" style={{marginTop:"6px"}}>
           {c.skills?.map(s => (
             <span key={s} className={`skill-chip ${requiredSkills?.includes(s) ? "matched" : ""}`}>
@@ -410,6 +459,11 @@ function CandidateCard({ c, idx, requiredSkills, onViewCV, onUpdateStatus }) {
         {c.score && <ScoreBadge score={c.score.total} small />}
         {c.has_applied && (
           <button className="view-cv-btn" onClick={onViewCV}>View CV</button>
+        )}
+        {!c.has_applied && !alreadyExpressed && (
+          <button className="express-btn" onClick={onExpressInterest}>
+            ⭐ Express Interest
+          </button>
         )}
       </div>
     </div>

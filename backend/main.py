@@ -386,3 +386,53 @@ class InlineScoreRequest(BaseModel):
 def score_inline(request: InlineScoreRequest):
     """Score a consultant against an inline role definition (for custom projects)."""
     return compute_score(request.consultant, request.role)
+
+
+# ── Express Interest (manager → consultant) ───────────────────
+class ExpressInterestRequest(BaseModel):
+    consultant_id: str
+    role_id: str
+    manager_name: str
+    project_name: str
+    client: str
+    role_title: str
+    cl_label: str
+    district: Optional[str] = ""
+    industry: Optional[str] = ""
+
+@app.post("/express-interest")
+def express_interest(req: ExpressInterestRequest):
+    """Manager expresses interest in a consultant for a role.
+    Creates an application record on behalf of the consultant
+    with status 'Manager Interested'."""
+    apps = _applications.setdefault(req.consultant_id, [])
+    # Check if already applied or already approached
+    existing = next((a for a in apps if a["role_id"] == req.role_id), None)
+    if existing:
+        existing["status"] = "Manager Interested"
+        return {"status": "updated"}
+    from datetime import datetime
+    apps.append({
+        "role_id": req.role_id,
+        "status": "Manager Interested",
+        "cv_text": "",
+        "applied_at": datetime.utcnow().isoformat(),
+        "role_title": req.role_title,
+        "project_name": req.project_name,
+        "client": req.client,
+        "industry": req.industry,
+        "district": req.district,
+        "cl_label": req.cl_label,
+        "manager_initiated": True,
+    })
+    return {"status": "ok"}
+
+@app.get("/expressed-interest/{role_id}")
+def get_expressed_interest(role_id: str):
+    """Get all consultant IDs the manager has expressed interest in for a role."""
+    interested = []
+    for cid, apps in _applications.items():
+        for a in apps:
+            if a["role_id"] == role_id and a.get("manager_initiated"):
+                interested.append(cid)
+    return {"interested": interested}

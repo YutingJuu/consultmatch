@@ -99,7 +99,7 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
         district: role.district,
         cl_label: role.cl_label,
       });
-      if (onApplied) onApplied(roleId, tailoredText);
+      if (onApplied) onApplied(roleId, role);
     } catch (e) { /* already applied */ }
     setStep("submitted");
   };
@@ -246,19 +246,9 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
             <div className="submitted-screen">
               <div className="submitted-icon">✅</div>
               <h4>Application Submitted!</h4>
-              <p>Your tailored CV has been submitted for <strong>{role.role_title}</strong>.</p>
-              <div className="submitted-details">
-                <div className="submitted-row"><span>Role</span><strong>{role.role_title}</strong></div>
-                <div className="submitted-row"><span>Project</span><strong>{role.project_name}</strong></div>
-                <div className="submitted-row"><span>Client</span><strong>{role.client}</strong></div>
-                <div className="submitted-row"><span>Level</span><strong>{role.cl_label}</strong></div>
-                <div className="submitted-row">
-                  <span>Status</span>
-                  <strong className="status-pending">⏳ Under Review</strong>
-                </div>
-              </div>
-              <p className="submitted-note">
-                You will be notified if the project team expresses interest in your profile.
+              <p>Your tailored CV has been sent to <strong>{role.manager_name}</strong>, the project manager for <strong>{role.role_title}</strong> at {role.client}.</p>
+              <p className="submitted-note" style={{marginTop:"12px"}}>
+                Further communication will be conducted directly with the project manager. Good luck!
               </p>
             </div>
           )}

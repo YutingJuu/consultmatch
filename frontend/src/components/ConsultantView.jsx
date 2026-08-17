@@ -7,13 +7,14 @@ const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 export default function ConsultantView({ consultantId, customProfile }) {
   const [profile, setProfile] = useState(null);
-  const [roles, setRoles] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [scoresUnlocked, setScoresUnlocked] = useState(false);
   const [loadingScores, setLoadingScores] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [likes, setLikes] = useState([]);
+  const [appliedIds, setAppliedIds] = useState(new Set());
   const [applications, setApplications] = useState([]);
+
   const [applyingTo, setApplyingTo] = useState(null);
   const [tab, setTab] = useState("browse");
   const isCustom = !!customProfile;
@@ -48,7 +49,11 @@ export default function ConsultantView({ consultantId, customProfile }) {
       });
     }
     axios.get(`${API}/likes/${consultantId}`).then(r => setLikes(r.data.liked || []));
-    axios.get(`${API}/applications/${consultantId}`).then(r => setApplications(r.data));
+    axios.get(`${API}/applications/${consultantId}`).then(r => {
+      setApplications(r.data);
+      setAppliedIds(new Set(r.data.map(a => a.role_id)));
+    }).catch(() => {});
+
   }, [consultantId, isCustom]);
 
 
@@ -60,33 +65,27 @@ export default function ConsultantView({ consultantId, customProfile }) {
       ? [...prev, roleId] : prev.filter(id => id !== roleId));
   };
 
-  const onApplied = (roleId, cvText) => {
-    const role = displayList.find(x => (x.role_id || x.slot_id) === roleId);
-    if (role) {
-      setApplications(prev => [...prev, {
-        role_id: roleId,
-        role_title: role.role_title,
-        project_name: role.project_name,
-        client: role.client,
-        industry: role.industry,
-        district: role.district || "Singapore",
-        cl_label: role.cl_label,
-        status: "Applied",
-        applied_at: new Date().toISOString(),
-      }]);
-    }
+  const onApplied = (roleId, roleData) => {
+    setAppliedIds(prev => new Set([...prev, roleId]));
+    setApplications(prev => [...prev, {
+      role_id: roleId,
+      role_title: roleData?.role_title || roleData?.role,
+      project_name: roleData?.project_name,
+      client: roleData?.client,
+      industry: roleData?.industry,
+      district: roleData?.district || "Singapore",
+      cl_label: roleData?.cl_label,
+      status: "Applied",
+      applied_at: new Date().toISOString(),
+      manager_initiated: false,
+    }]);
   };
 
   if (!profile) return <div className="loading">Loading...</div>;
 
   const displayList = recommendations;
   const likedRoles = recommendations.filter(r => likes.includes(r.role_id || r.slot_id));
-  const appliedIds = new Set(applications.map(a => a.role_id));
 
-  const STATUS_COLOR = {
-    "Applied": "#3b82f6", "Under Review": "#d97706",
-    "Shortlisted": "#16a34a", "Not Selected": "#94a3b8",
-  };
 
   return (
     <div className="view-container">
@@ -171,58 +170,50 @@ export default function ConsultantView({ consultantId, customProfile }) {
         </div>
       )}
 
-      {/* Applications tab */}
+
+            {/* My Applications tab */}
       {tab === "applications" && (
         <div className="applications-panel">
           {applications.length === 0
             ? <div className="empty-state">
                 <p>📋</p>
                 <p>No applications yet.</p>
-                <p>Click "Apply" on any role card to get started.</p>
+                <p>Browse roles and click Apply to get started.</p>
               </div>
-            : applications.map(a => (
-                <div key={a.role_id} className="application-card">
-                  <div className="application-header">
-                    <div>
-                      <strong>{a.role_title}</strong>
-                      <span className="card-client">
-                        {a.project_name} · {a.client}
+            : applications.map((a, idx) => {
+                const STATUS_CONFIG = {
+                  "Applied":           { color: "#3b82f6", bg: "#eff6ff", icon: "📤", label: "Applied" },
+                  "Manager Interested": { color: "#16a34a", bg: "#f0fdf4", icon: "⭐", label: "Manager Interested" },
+                  "Shortlisted":       { color: "#16a34a", bg: "#f0fdf4", icon: "✅", label: "Shortlisted" },
+                  "Not Selected":      { color: "#94a3b8", bg: "#f8fafc", icon: "✗",  label: "Not Selected" },
+                };
+                const sc = STATUS_CONFIG[a.status] || STATUS_CONFIG["Applied"];
+                return (
+                  <div key={idx} className="application-card">
+                    <div className="application-header">
+                      <div>
+                        <strong>{a.role_title}</strong>
+                        <span className="card-client">{a.project_name} · {a.client}</span>
+                        {a.cl_label && <span className="app-cl-label">{a.cl_label}</span>}
+                      </div>
+                      <span className="status-pill"
+                        style={{background: sc.bg, color: sc.color, border: `1px solid ${sc.color}40`}}>
+                        {sc.icon} {sc.label}
                       </span>
-                      <span className="app-cl-label">{a.cl_label}</span>
                     </div>
-                    <span className="status-pill"
-                      style={{background: STATUS_COLOR[a.status]+"20",
-                              color: STATUS_COLOR[a.status],
-                              border:`1px solid ${STATUS_COLOR[a.status]}40`}}>
-                      {a.status}
-                    </span>
+                    <div className="application-meta">
+                      <span>📍 {a.district || "Singapore"}</span>
+                      <span>🏭 {a.industry}</span>
+                      <span>🕐 {a.manager_initiated ? "Manager reached out" : "You applied"} · {new Date(a.applied_at).toLocaleDateString("en-SG", {day:"numeric",month:"short",year:"numeric"})}</span>
+                    </div>
+                    {a.status === "Manager Interested" && (
+                      <div className="manager-interest-note">
+                        ⭐ A project manager has expressed interest in your profile for this role. Check your email for further communication.
+                      </div>
+                    )}
                   </div>
-                  <div className="application-meta">
-                    <span>📍 {a.district}</span>
-                    <span>🏭 {a.industry}</span>
-                    <span>🕐 Applied {new Date(a.applied_at).toLocaleDateString("en-SG",
-                      {day:"numeric",month:"short",year:"numeric"})}</span>
-                  </div>
-                  <div className="application-timeline">
-                    {["Applied","Under Review","Shortlisted"].map(s => {
-                      const order = ["Applied","Under Review","Shortlisted","Not Selected"];
-                      const done = order.indexOf(s) <= order.indexOf(a.status) && a.status !== "Not Selected";
-                      const current = a.status === s;
-                      return (
-                        <div key={s} className={`timeline-step ${done?"done":""} ${current?"current":""}`}>
-                          <div className="timeline-dot"/>
-                          <span>{s}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {a.status === "Not Selected" && (
-                    <p className="not-selected-note">
-                      Thank you for your interest. The project team has selected other candidates for this role.
-                    </p>
-                  )}
-                </div>
-              ))
+                );
+              })
           }
         </div>
       )}
