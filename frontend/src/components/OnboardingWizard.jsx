@@ -146,19 +146,21 @@ export default function OnboardingWizard({ onComplete, onBack }) {
                 />
               </div>
 
+
               <div className="form-field">
                 <label>Career level</label>
-                <div className="option-cards" style={{flexDirection:"column",gap:"6px"}}>
+                <select
+                  value={form.cl_title}
+                  onChange={e => {
+                    const lvl = LEVELS.find(l => l.value === e.target.value);
+                    if (lvl) { update("cl_title", lvl.value); update("cl", lvl.cl); }
+                  }}
+                  style={{width:"100%",padding:"10px 12px",border:"1.5px solid #e2e8f0",
+                    borderRadius:"8px",fontSize:"14px",background:"white",color:"#1e293b"}}>
                   {LEVELS.map(l => (
-                    <button
-                      key={l.value}
-                      className={`option-card ${form.cl_title === l.value ? "active" : ""}`}
-                      onClick={() => { update("cl_title", l.value); update("cl", l.cl); }}
-                    >
-                      {l.label}
-                    </button>
+                    <option key={l.value} value={l.value}>{l.label}</option>
                   ))}
-                </div>
+                </select>
               </div>
 
               <div className="form-field">
