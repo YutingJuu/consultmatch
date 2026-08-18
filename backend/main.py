@@ -439,3 +439,22 @@ def get_expressed_interest(role_id: str):
             if a["role_id"] == role_id and a.get("manager_initiated"):
                 interested.append(cid)
     return {"interested": interested}
+
+
+# ── Text extraction (for Submit Directly with binary files) ───
+class ExtractRequest(BaseModel):
+    file_base64: str
+    file_name: str
+
+@app.post("/extract")
+def extract_text(request: ExtractRequest):
+    """Extract plain text from PDF/PPTX/DOCX for direct submission."""
+    import base64
+    file_bytes = base64.b64decode(request.file_base64)
+    name = request.file_name.lower()
+    if name.endswith(".pdf"):
+        # For PDF, return a note — PDF extraction without AI is unreliable
+        # Return empty so frontend falls back gracefully
+        return {"text": ""}
+    extracted = extract_text_from_file(file_bytes, request.file_name)
+    return {"text": extracted}

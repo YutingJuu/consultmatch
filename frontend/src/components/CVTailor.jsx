@@ -3,27 +3,6 @@ import axios from "axios";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
-const DEFAULT_CV_TEXT = `EXPERIENCE
-
-Singapore Central Bank - DevOps Engineer (Oct 2024 – Apr 2026)
-• Onboarded 10+ applications onto CI/CD pipelines (Jenkins/CloudBees, with ongoing migration to GitLab), resolving build issues and deployment blockers, and successfully promoting pilot applications into production environments.
-• Supported containerised application deployments in RHEL-based environments and contributed to migration efforts towards OCP for standardised orchestration.
-• Led planning and design discussions for GCC data landing zone migration, and conducted pilot testing in AWS using Apache Airflow, S3, EC2 and other services.
-• Addressed security and code quality findings from tools such as SonarQube and Nexus IQ, remediating vulnerabilities to meet MAS security and compliance standards.
-• Managed and coordinated weekly deployment activities across a 15+ member team, ensuring efficient release cycles with minimal downtime.
-
-Government Technology Agency - SRE / Data Analyst (Jun 2021 – Sep 2024)
-• Designed and implemented a centralised ETL process and cost and usage reporting portal on AWS, aggregating billing data across multiple AWS accounts, enabling stakeholders to perform data-driven cost analysis and optimisation.
-• Built a self-service platform for alert and maintenance window management used across multiple application teams, aligned with defined SLA/SLO targets, improving service reliability and reducing manual operational overhead.
-• Developed and maintained observability dashboards using Grafana and Prometheus, and leveraged Datadog for API endpoint monitoring, enabling real-time visibility into system health.
-
-Maritime Sector – Internship & Publication
-• Published a paper on shipping CO2 emissions using Python and Spark.
-• Applied ML techniques for consulting projects, built a classification model to identify risky vessels, and a live Power BI dashboard for vessel carbon emission monitoring.
-
-MSc Business Analytics, NUS – AI & Analytics Projects
-• Developed an AI-powered wedding design application using LLM-driven prompt generation and image generation models.
-• Built an agentic AI pet health assistant using multi-step reasoning, dual RAG, and LLM-based decision support.`;
 
 export default function CVTailor({ role, consultantProfile, consultantId, onClose, onApplied }) {
   // Custom project slots use slot_id, backend roles use role_id
@@ -67,6 +46,37 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const submitDirect = async () => {
+    try {
+      let submitText = cvText;
+      // If binary file, extract text via backend before submitting
+      if (fileData && !cvText) {
+        try {
+          const extractRes = await axios.post(`${API}/extract`, {
+            file_base64: fileData.base64,
+            file_name: fileData.name,
+          });
+          submitText = extractRes.data.text || `[CV file: ${fileData.name}]`;
+        } catch {
+          submitText = `[CV file: ${fileData.name}]`;
+        }
+      }
+      await axios.post(`${API}/applications`, {
+        consultant_id: consultantId,
+        role_id: roleId,
+        cv_text: submitText,
+        role_title: role.role_title || role.role,
+        project_name: role.project_name,
+        client: role.client,
+        industry: role.industry,
+        district: role.district,
+        cl_label: role.cl_label,
+      });
+      if (onApplied) onApplied(roleId, role);
+    } catch (e) { /* already applied */ }
+    setStep("submitted");
   };
 
   const tailorCV = async () => {
@@ -257,11 +267,18 @@ export default function CVTailor({ role, consultantProfile, consultantId, onClos
         {/* Footer */}
         <div className="modal-footer">
           {(step === "confirm" || step === "upload") && (
-            <button className="modal-btn primary"
-              onClick={() => { setStep("tailoring"); tailorCV(); }}
-              disabled={!cvText && !fileData}>
-              ✨ Tailor with AI →
-            </button>
+            <>
+              <button className="modal-btn secondary"
+                onClick={submitDirect}
+                disabled={!cvText && !fileData}>
+                Submit Directly
+              </button>
+              <button className="modal-btn primary"
+                onClick={() => { setStep("tailoring"); tailorCV(); }}
+                disabled={!cvText && !fileData}>
+                ✨ Tailor with AI →
+              </button>
+            </>
           )}
           {step === "review" && (
             <>

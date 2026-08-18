@@ -36,6 +36,7 @@ export default function ManagerView({ projectId, customProject }) {
         industry: customProject.industry,
         wfh_policy: customProject.wfh_policy,
         duration: customProject.duration,
+        start_date: customProject.start_date || "",
         district: customProject.district,
         preferred_work_style: customProject.preferred_work_style || "structured",
       }));
@@ -165,12 +166,12 @@ export default function ManagerView({ projectId, customProject }) {
     setProposing(true);
     try {
       if (customProject) {
-        // Custom project — propose team client-side from already-loaded candidates
+        // Custom project — propose team client-side, no double allocation
+        const usedIds = new Set();
         const proposed = projectRoles.map(role => {
           const candidates = rolesCandidates[getRoleId(role)] || [];
-          const used = new Set();
-          const best = candidates.find(c => !used.has(c.id));
-          if (best) used.add(best.id);
+          const best = candidates.find(c => !usedIds.has(c.id));
+          if (best) usedIds.add(best.id);
           return { role, proposed: best ? [best] : [] };
         });
         setProposedTeam(proposed);
