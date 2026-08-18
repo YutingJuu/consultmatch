@@ -148,7 +148,7 @@ export default function OnboardingWizard({ onComplete, onBack }) {
 
               <div className="form-field">
                 <label>Career level</label>
-                <div className="option-cards">
+                <div className="option-cards" style={{flexDirection:"column",gap:"6px"}}>
                   {LEVELS.map(l => (
                     <button
                       key={l.value}
