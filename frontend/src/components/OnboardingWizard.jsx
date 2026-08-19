@@ -18,6 +18,18 @@ const ALL_SKILLS = [
   "Client Relationship Management", "Digital Marketing",
 ];
 
+
+const SKILL_CATEGORIES = {
+  "AI / ML": ["Python", "Machine Learning", "Deep Learning", "NLP", "TensorFlow", "MLOps", "AI Agents", "Statistics", "R", "Feature Engineering"],
+  "Data & Analytics": ["SQL", "Data Visualisation", "Power BI", "Tableau", "Data ETL", "Data Governance"],
+  "Cloud & DevOps": ["AWS", "Cloud Architecture", "DevOps", "Kubernetes", "Terraform", "Docker", "CI/CD"],
+  "Cybersecurity": ["Cybersecurity", "Risk Management", "Compliance"],
+  "Business & Strategy": ["Business Analysis", "Strategy", "Agile", "Stakeholder Management", "Project Management", "Change Management", "Financial Modelling", "UAT"],
+  "CRM & ERP": ["Salesforce", "CRM", "SAP", "ERP"],
+  "Design": ["UX Design", "Figma", "User Research"],
+  "Other": ["Supply Chain", "Logistics Optimisation", "Blockchain", "Mergers & Acquisitions", "Research", "Excel", "PowerPoint"],
+};
+
 const INDUSTRIES = [
   "Banking", "Insurance", "Technology", "Healthcare",
   "Government", "Retail", "Logistics", "Telecommunications",
