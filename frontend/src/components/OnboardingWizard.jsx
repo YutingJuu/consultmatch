@@ -34,6 +34,46 @@ const LEVELS = [
 
 const STEPS = ["About You", "Your Skills", "Upload CV", "Your Preferences", "Review"];
 
+function CategorisedSkills({ selected, onChange }) {
+  const [openCats, setOpenCats] = React.useState(["AI / ML"]);
+  const toggle = (cat) => setOpenCats(prev =>
+    prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+  );
+  const toggleSkill = (s) => onChange(
+    selected.includes(s) ? selected.filter(x => x !== s) : [...selected, s]
+  );
+  return (
+    <div className="skill-categories">
+      {Object.entries(SKILL_CATEGORIES).map(([cat, skills]) => {
+        const selectedInCat = skills.filter(s => selected.includes(s)).length;
+        const isOpen = openCats.includes(cat);
+        return (
+          <div key={cat} className="skill-category">
+            <button className="skill-cat-header" onClick={() => toggle(cat)}>
+              <span>{cat}</span>
+              <span className="skill-cat-meta">
+                {selectedInCat > 0 && <span className="skill-cat-badge">{selectedInCat}</span>}
+                <span className="skill-cat-arrow">{isOpen ? "▲" : "▼"}</span>
+              </span>
+            </button>
+            {isOpen && (
+              <div className="skill-cat-grid">
+                {skills.map(s => (
+                  <button key={s}
+                    className={`skill-toggle ${selected.includes(s) ? "active" : ""}`}
+                    onClick={() => toggleSkill(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function OnboardingWizard({ onComplete, onBack }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({

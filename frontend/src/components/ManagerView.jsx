@@ -347,7 +347,7 @@ export default function ManagerView({ projectId, customProject }) {
 
                 {isExpanded && (
                   <div className="candidate-list">
-                    <p className="role-desc-manager">{role.description}</p>
+                    <p className="role-desc-manager" style={{fontStyle:"normal"}}>{role.description}</p>
                     {candidates.length === 0
                       ? <p className="empty-msg">No eligible candidates found for this CL range.</p>
                       : (() => {
@@ -366,14 +366,14 @@ export default function ManagerView({ projectId, customProject }) {
                                     📬 Applied ({applied.length})
                                   </div>
                                   {applied.map((c, idx) => (
-                                    <CandidateCard key={c.id} c={c} idx={idx}
+                                    <CandidateCard key={c.id} c={c} idx={globalIdx}
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
                                       onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
                                       onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
-                                  ))}
+                                  );})}
                                 </>
                               )}
                               {goodMatch.length > 0 && (
@@ -382,14 +382,14 @@ export default function ManagerView({ projectId, customProject }) {
                                     🤖 Good Match — score ≥ {THRESHOLD} ({goodMatch.length})
                                   </div>
                                   {goodMatch.map((c, idx) => (
-                                    <CandidateCard key={c.id} c={c} idx={idx}
+                                    <CandidateCard key={c.id} c={c} idx={globalIdx}
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
                                       onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
                                       onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
-                                  ))}
+                                  );})}
                                 </>
                               )}
                               {goodMatch.length === 0 && applied.length === 0 && (
@@ -403,15 +403,15 @@ export default function ManagerView({ projectId, customProject }) {
                                       ? `▲ Hide ${belowThreshold.length} lower-match candidates`
                                       : `▼ Show ${belowThreshold.length} more candidates (score < ${THRESHOLD})`}
                                   </button>
-                                  {showBelow && belowThreshold.map((c, idx) => (
-                                    <CandidateCard key={c.id} c={c} idx={idx}
+                                  {showBelow && belowThreshold.map((c, idx) => { const globalIdx = applied.length + goodMatch.length + idx; return (
+                                    <CandidateCard key={c.id} c={c} idx={globalIdx}
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
                                       onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
                                       onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
-                                  ))}
+                                  );})}
                                 </>
                               )}
                             </>

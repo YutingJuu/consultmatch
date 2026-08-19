@@ -15,14 +15,17 @@ const DISTRICTS = [
 ];
 
 // CL7 = most senior (Manager), CL11 = most junior (Analyst)
-const COMMON_SKILLS = [
-  "Python", "Machine Learning", "SQL", "Data Visualisation", "Statistics",
-  "Business Analysis", "Agile", "Stakeholder Management", "Project Management",
-  "AWS", "Cloud Architecture", "DevOps", "Kubernetes", "NLP", "Deep Learning",
-  "UX Design", "Figma", "Cybersecurity", "Risk Management", "Compliance",
-  "SAP", "ERP", "Salesforce", "CRM", "Supply Chain", "Strategy",
-  "Change Management", "Power BI", "Tableau", "Data Governance", "Financial Modelling",
-];
+const SKILL_CATEGORIES = {
+  "AI / ML": ["Python", "Machine Learning", "Deep Learning", "NLP", "TensorFlow", "MLOps", "AI Agents", "Statistics", "R", "Feature Engineering"],
+  "Data & Analytics": ["SQL", "Data Visualisation", "Power BI", "Tableau", "Data ETL", "Data Governance"],
+  "Cloud & DevOps": ["AWS", "Cloud Architecture", "DevOps", "Kubernetes", "Terraform", "Docker", "CI/CD"],
+  "Cybersecurity": ["Cybersecurity", "Risk Management", "Compliance"],
+  "Business & Strategy": ["Business Analysis", "Strategy", "Agile", "Stakeholder Management", "Project Management", "Change Management", "Financial Modelling", "UAT"],
+  "CRM & ERP": ["Salesforce", "CRM", "SAP", "ERP"],
+  "Design": ["UX Design", "Figma", "User Research"],
+  "Other": ["Supply Chain", "Logistics Optimisation", "Blockchain", "Mergers & Acquisitions", "Research", "Excel", "PowerPoint"],
+};
+const COMMON_SKILLS = Object.values(SKILL_CATEGORIES).flat();
 
 const CL_OPTIONS = [
   { label: "CL7 Manager", cl: 7 },
@@ -306,22 +309,36 @@ export default function ProjectWizard({ onComplete, onBack }) {
                       ))}
                     </div>
                   )}
-                  <div className="skill-grid">
-                    {COMMON_SKILLS
-                      .filter(s => s.toLowerCase().includes(skillSearch.toLowerCase()))
-                      .map(s => (
-                        <button key={s}
-                          className={`skill-toggle ${newSlot.required_skills.includes(s) ? "active" : ""}`}
-                          onClick={() => setNewSlot(n => ({
-                            ...n,
-                            required_skills: n.required_skills.includes(s)
-                              ? n.required_skills.filter(x => x !== s)
-                              : [...n.required_skills, s]
-                          }))}>
-                          {newSlot.required_skills.includes(s) ? "✓ " : ""}{s}
-                        </button>
-                      ))
-                    }
+                  <div className="skill-categories">
+                    {Object.entries(SKILL_CATEGORIES).map(([cat, skills]) => {
+                      const filtered = skillSearch
+                        ? skills.filter(s => s.toLowerCase().includes(skillSearch.toLowerCase()))
+                        : skills;
+                      if (filtered.length === 0) return null;
+                      const selCount = filtered.filter(s => newSlot.required_skills.includes(s)).length;
+                      return (
+                        <div key={cat} className="skill-category">
+                          <div className="skill-cat-header" style={{cursor:"default"}}>
+                            <span>{cat}</span>
+                            {selCount > 0 && <span className="skill-cat-badge">{selCount}</span>}
+                          </div>
+                          <div className="skill-cat-grid">
+                            {filtered.map(s => (
+                              <button key={s}
+                                className={`skill-toggle ${newSlot.required_skills.includes(s) ? "active" : ""}`}
+                                onClick={() => setNewSlot(n => ({
+                                  ...n,
+                                  required_skills: n.required_skills.includes(s)
+                                    ? n.required_skills.filter(x => x !== s)
+                                    : [...n.required_skills, s]
+                                }))}>
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
