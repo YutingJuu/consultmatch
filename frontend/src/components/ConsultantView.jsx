@@ -22,7 +22,8 @@ export default function ConsultantView({ consultantId, customProfile }) {
   const fetchApplications = () => {
     axios.get(`${API}/applications/${consultantId}`).then(r => {
       setApplications(r.data);
-      setAppliedIds(new Set(r.data.map(a => a.role_id)));
+      // Only consultant-initiated apps show "Applied" badge on role cards
+      setAppliedIds(new Set(r.data.filter(a => !a.manager_initiated).map(a => a.role_id)));
     }).catch(() => {});
   };
 
