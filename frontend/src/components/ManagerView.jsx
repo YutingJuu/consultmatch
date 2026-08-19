@@ -587,7 +587,7 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
         </div>
       </div>
       <div className="candidate-score-col">
-        {c.score && <ScoreBadge score={c.score.total} small />}
+        {c.score && <ScoreBadge score={c.score.total} />}
       </div>
     </div>
   );

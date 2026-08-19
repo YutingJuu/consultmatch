@@ -1096,7 +1096,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 /* ── Candidate card footer (action buttons) ────────────────── */
 .candidate-footer {
   display: flex; gap: 8px; align-items: center; margin-top: 10px;
-  padding-top: 10px; border-top: 0.5px solid #e2e8f0;
 }
 .candidate-score-col {
   display: flex; flex-direction: column; align-items: flex-end;
