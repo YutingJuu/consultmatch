@@ -101,8 +101,7 @@ export default function ConsultantView({ consultantId, customProfile }) {
         <div className="profile-header">
           <div>
             <h2>{profile.name}</h2>
-            <span className="tag cl-tag">CL{profile.cl}</span>
-            <span className="tag">{profile.cl_title}</span>
+            <span className="tag cl-tag">CL{profile.cl} {profile.cl_title}</span>
             {isCustom && <span className="tag tag-new">Your Profile</span>}
           </div>
           <div className="profile-meta">
