@@ -576,18 +576,20 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
             <span>Avail {c.score.breakdown.availability}/20</span>
           </div>
         )}
+        <div className="candidate-footer">
+          {c.has_applied && (
+            <button className="view-cv-btn" onClick={onViewCV}>View CV</button>
+          )}
+          {!alreadyExpressed
+            ? <button className="express-btn" onClick={onExpressInterest}>✉️ Contact</button>
+            : <span className="signal-badge approached">✉️ Email Sent</span>
+          }
+        </div>
       </div>
-      <div className="candidate-actions">
-        {c.score && <ScoreBadge score={c.score.total} />}
-        {c.has_applied && (
-          <button className="view-cv-btn" onClick={onViewCV}>View CV</button>
-        )}
-        {!alreadyExpressed && (
-          <button className="express-btn" onClick={onExpressInterest}>
-            ✉️ Contact
-          </button>
-        )}
+      <div className="candidate-score-col">
+        {c.score && <ScoreBadge score={c.score.total} small />}
       </div>
     </div>
   );
 }
+
