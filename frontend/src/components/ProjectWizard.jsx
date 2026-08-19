@@ -62,12 +62,7 @@ export default function ProjectWizard({ onComplete, onBack }) {
     const sorted = [...newSlot.cl_selected].sort((a, b) => a - b);
     const cl_min = sorted[0];
     const cl_max = sorted[sorted.length - 1];
-    const clLabels = CL_OPTIONS
-      .filter(o => newSlot.cl_selected.includes(o.cl))
-      .map(o => o.label);
-    const cl_label = clLabels.length === 1
-      ? clLabels[0]
-      : `CL${cl_min}–CL${cl_max} (${clLabels.map(l => l.replace(/CL\d+ /, "")).join(" / ")})`;
+    const cl_label = cl_min === cl_max ? `CL${cl_min}` : `CL${cl_min}\u2013${cl_max}`;
     const id = `CUSTOM-${Date.now()}-${slots.length}`;
     setSlots(prev => [...prev, {
       slot_id: id,

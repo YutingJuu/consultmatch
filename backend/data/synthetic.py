@@ -208,16 +208,16 @@ PROJECTS = [
         "required_skills":["Machine Learning","Python","SQL","Statistics"],
         "description":"Rebuild the credit risk scoring engine for a MAS-regulated retail bank using modern machine learning techniques. The project involves replacing a legacy rules-based system with a model-driven approach, improving default prediction accuracy while meeting MAS Notice 635 compliance requirements. The team will work closely with the bank's risk, technology, and compliance functions throughout delivery.",
         "team_slots":[
-            {"slot_id":"P01-S1","role":"Project Lead","cl_range":[8,8],"cl_label":"CL8 Associate Manager",
+            {"slot_id":"P01-S1","role":"Project Lead","cl_range":[8,8],"cl_label":"CL8",
              "required_skills":["Project Management","Stakeholder Management","Agile","Strategy"],
              "description":"Lead the end-to-end delivery of the credit scoring modernisation programme, managing stakeholders across the bank's risk, technology, compliance, and business functions. Responsible for programme governance, risk escalation, and steering committee reporting throughout the project lifecycle."},
-            {"slot_id":"P01-S2","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P01-S2","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Machine Learning","Python","SQL","Statistics"],
              "description":"Design and build machine learning models for credit risk scoring, including feature engineering, model training, validation, and regulatory documentation. Work closely with the bank's risk team to ensure model performance meets MAS Notice 635 requirements and internal model risk governance standards."},
-            {"slot_id":"P01-S3","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P01-S3","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Machine Learning","Python","SQL","Statistics"],
              "description":"Support model development by owning the feature engineering pipeline and data preparation workflow across multiple source systems. Collaborate with the data engineering team on data quality, lineage tracking, and pipeline automation to ensure reliable model inputs."},
-            {"slot_id":"P01-S4","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P01-S4","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["SQL","Data Visualisation","Excel","Research"],
              "description":"Perform exploratory data analysis across customer and transaction datasets to surface insights for the risk team. Build and maintain reporting dashboards tracking model performance, scorecard stability, and portfolio risk metrics for senior stakeholders."},
         ]
@@ -232,7 +232,7 @@ PROJECTS = [
         "required_skills":["Business Analysis","Agile","Stakeholder Management","UX Design"],
         "description":"Design and implement a unified digital health records platform across eight public hospitals under the National Healthcare Group. The project will replace fragmented legacy systems with a single integrated platform, improving clinical workflows and enabling real-time data sharing across hospital sites. Change management and staff training are key workstreams alongside the technology build.",
         "team_slots":[
-            {"slot_id":"P02-S1","role":"Programme Manager","cl_range":[7,8],"cl_label":"CL7–8",
+            {"slot_id":"P02-S1","role":"Programme Manager","cl_range":[7,8],"cl_label":"CL7",
              "required_skills":["Project Management","Stakeholder Management","Change Management","Strategy"],
              "description":"Oversee the full programme delivering a unified digital health records system across eight public hospitals, managing dependencies between clinical, IT, and vendor workstreams. Engage senior clinical and IT stakeholders including Chief Medical Officers and CIOs, and chair the monthly programme steering committee."},
             {"slot_id":"P02-S2","role":"Business Analyst","cl_range":[9,9],"cl_label":"CL9",
@@ -241,7 +241,7 @@ PROJECTS = [
             {"slot_id":"P02-S3","role":"Business Analyst","cl_range":[9,9],"cl_label":"CL9",
              "required_skills":["Business Analysis","UX Design","User Research","Agile"],
              "description":"Lead user research and UX design for the patient-facing portal, conducting usability testing with clinical users across multiple hospital sites. Produce wireframes, prototypes, and interaction specifications to guide the technology build team."},
-            {"slot_id":"P02-S4","role":"Change & Training Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P02-S4","role":"Change & Training Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["Business Analysis","Research","PowerPoint","Excel"],
              "description":"Develop training materials, user guides, and change communications for clinical staff across eight hospital sites ahead of the platform go-live. Track adoption metrics and support post-go-live hypercare, escalating usability issues to the project team for resolution."},
         ]
@@ -259,10 +259,10 @@ PROJECTS = [
             {"slot_id":"P03-S1","role":"ML Engineer","cl_range":[9,9],"cl_label":"CL9",
              "required_skills":["Machine Learning","Python","NLP","TensorFlow"],
              "description":"Build and deploy the personalised recommendation engine, owning the model training pipeline, feature store, and A/B testing framework. Monitor model performance in production and implement retraining workflows to address distribution shift as customer behaviour evolves."},
-            {"slot_id":"P03-S2","role":"ML Engineer","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P03-S2","role":"ML Engineer","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Machine Learning","Python","Data Visualisation","SQL"],
              "description":"Develop real-time recommendation APIs and integrate them with the client's e-commerce platform, ensuring sub-100ms response times under peak load. Monitor recommendation quality metrics and work with the data analyst to validate business impact through controlled experiments."},
-            {"slot_id":"P03-S3","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P03-S3","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["SQL","Tableau","Data Visualisation","Research"],
              "description":"Analyse customer browsing and purchase behaviour data to identify high-value segments and validate the quality of recommendations through statistical testing. Produce weekly performance reports for business stakeholders tracking click-through rates, conversion uplift, and revenue attribution."},
         ]
@@ -280,13 +280,13 @@ PROJECTS = [
             {"slot_id":"P04-S1","role":"Cloud Architect","cl_range":[8,8],"cl_label":"CL8",
              "required_skills":["Cloud Architecture","AWS","DevOps","Strategy"],
              "description":"Define the cloud migration architecture for 40+ enterprise applications and lead technical design sessions with the client's IT leadership and vendor teams. Accountable for cloud security posture, network design, and cost optimisation targets across the AWS landing zone."},
-            {"slot_id":"P04-S2","role":"DevOps Engineer","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P04-S2","role":"DevOps Engineer","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["DevOps","AWS","Kubernetes","Python"],
              "description":"Build and maintain CI/CD pipelines for migrated workloads using Jenkins and GitLab, and lead the containerisation of legacy applications using Docker and Kubernetes. Ensure all pipelines meet the client's security and code quality standards as defined by SonarQube and Nexus IQ."},
-            {"slot_id":"P04-S3","role":"DevOps Engineer","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P04-S3","role":"DevOps Engineer","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["AWS","DevOps","Cloud Architecture","Python"],
              "description":"Own infrastructure-as-code using Terraform, managing networking, IAM policies, and security group configurations across AWS environments. Implement automated compliance checks and cost guardrails to ensure the cloud environment remains secure and within budget throughout the migration."},
-            {"slot_id":"P04-S4","role":"Cloud Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P04-S4","role":"Cloud Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["AWS","Research","Excel","Business Analysis"],
              "description":"Track migration progress across workstreams, maintain the application inventory and dependency register, and produce weekly status reports for the client steering committee. Coordinate handover documentation between project teams and the client's cloud operations team ahead of go-live."},
         ]
@@ -307,10 +307,10 @@ PROJECTS = [
             {"slot_id":"P05-S2","role":"Project Manager","cl_range":[8,8],"cl_label":"CL8",
              "required_skills":["Project Management","Agile","Stakeholder Management","Business Analysis"],
              "description":"Manage day-to-day delivery across multiple workstreams, coordinating dependencies between government agencies, technology vendors, and the Accenture delivery team. Maintain the integrated programme plan, resolve delivery blockers, and prepare fortnightly progress reports for the senior programme manager."},
-            {"slot_id":"P05-S3","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P05-S3","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Business Analysis","Agile","Stakeholder Management","Research"],
              "description":"Map as-is and to-be processes for digital service delivery across participating government agencies, running co-design workshops with public officers and citizen focus groups. Develop the target operating model and digital service standards that will govern citizen-facing platforms post-transformation."},
-            {"slot_id":"P05-S4","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P05-S4","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Business Analysis","Research","Data Visualisation","Excel"],
              "description":"Own the benefits realisation framework and track KPIs across Smart Nation initiatives, producing dashboards for parliamentary reporting and ministerial briefings. Conduct quarterly benefits reviews with agency heads to assess realisation progress against the approved business case."},
             {"slot_id":"P05-S5","role":"Analyst","cl_range":[11,11],"cl_label":"CL11",
@@ -328,13 +328,13 @@ PROJECTS = [
         "required_skills":["Python","Statistics","Machine Learning","SQL"],
         "description":"Develop a machine learning-based fraud detection system for Great Eastern Insurance's claims processing operations, targeting a reduction in fraudulent payouts across motor, health, and property product lines. The system will integrate with the existing claims management platform and include a real-time alert dashboard for the claims investigation team. Model outputs must meet the insurer's internal model risk governance standards.",
         "team_slots":[
-            {"slot_id":"P06-S1","role":"Analytics Lead","cl_range":[8,9],"cl_label":"CL8–9",
+            {"slot_id":"P06-S1","role":"Analytics Lead","cl_range":[8,9],"cl_label":"CL8",
              "required_skills":["Machine Learning","Python","Statistics","Strategy"],
              "description":"Lead the fraud analytics workstream, defining the modelling approach and presenting findings and recommendations to Great Eastern's Chief Risk Officer and actuarial team. Oversee model validation, documentation, and sign-off under the insurer's internal model risk governance framework."},
-            {"slot_id":"P06-S2","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P06-S2","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Python","Statistics","Machine Learning","SQL"],
              "description":"Build supervised and unsupervised fraud detection models using historical claims data, working with claims adjusters to define fraud indicators and validate model outputs against known fraud cases. Develop model explainability outputs to support the investigation team's case-building process."},
-            {"slot_id":"P06-S3","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P06-S3","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["SQL","Python","Data Visualisation","Statistics"],
              "description":"Own the fraud monitoring dashboard and real-time alert pipeline, enabling the claims investigation team to triage high-risk cases efficiently. Conduct retrospective analysis on flagged claims to continuously improve model precision and recall as new fraud patterns emerge."},
         ]
@@ -352,10 +352,10 @@ PROJECTS = [
             {"slot_id":"P07-S1","role":"Supply Chain Lead","cl_range":[8,8],"cl_label":"CL8",
              "required_skills":["Supply Chain","Strategy","Stakeholder Management","Project Management"],
              "description":"Lead the supply chain optimisation engagement, defining the analytical roadmap and managing the client relationship with the COO and operations leadership team. Responsible for steering committee reporting and translating analytical outputs into prioritised operational recommendations."},
-            {"slot_id":"P07-S2","role":"Supply Chain Analyst","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P07-S2","role":"Supply Chain Analyst","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Supply Chain","Python","SQL","Data Visualisation"],
              "description":"Build route optimisation models for last-mile delivery using operations research techniques and geospatial data, targeting a 12% reduction in cost-per-delivery across the Singapore network. Work with the client's operations team to validate assumptions and pilot recommendations in selected distribution zones."},
-            {"slot_id":"P07-S3","role":"Supply Chain Analyst","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P07-S3","role":"Supply Chain Analyst","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Logistics Optimisation","SQL","Excel","Business Analysis"],
              "description":"Own the demand forecasting model and inventory optimisation analysis, integrating historical sales data, seasonality patterns, and promotional calendars to improve stock positioning across warehouses. Produce weekly KPI reports for the client's supply chain leadership team tracking forecast accuracy and inventory turns."},
         ]
@@ -379,7 +379,7 @@ PROJECTS = [
             {"slot_id":"P08-S3","role":"Security Consultant","cl_range":[9,9],"cl_label":"CL9",
              "required_skills":["Cybersecurity","Compliance","Risk Management","Business Analysis"],
              "description":"Map SGX's existing cybersecurity controls against MAS Technology Risk Management guidelines and IOSCO principles, identifying compliance gaps requiring remediation ahead of the next regulatory inspection. Prepare detailed gap analysis documentation and draft remediation action plans for review by the CISO and Chief Risk Officer."},
-            {"slot_id":"P08-S4","role":"Security Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P08-S4","role":"Security Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["Research","Excel","Business Analysis","Compliance"],
              "description":"Support risk register maintenance, track remediation progress against agreed timelines, and coordinate evidence collection across IT and business teams for regulatory submission packages. Prepare management reporting on risk closure rates and outstanding issues for the Board Risk Committee."},
         ]
@@ -394,13 +394,13 @@ PROJECTS = [
         "required_skills":["CRM","Salesforce","Business Analysis","Stakeholder Management"],
         "description":"Lead the Salesforce CRM rollout across a regional telco's customer service operations, covering Sales Cloud and Service Cloud implementation for 500+ agents across three contact centres. The engagement includes system configuration, integration with the client's billing and provisioning systems, and a comprehensive change management and training programme. Success will be measured by agent adoption rates and customer satisfaction scores post go-live.",
         "team_slots":[
-            {"slot_id":"P09-S1","role":"CRM Programme Lead","cl_range":[8,9],"cl_label":"CL8–9",
+            {"slot_id":"P09-S1","role":"CRM Programme Lead","cl_range":[8,9],"cl_label":"CL8",
              "required_skills":["CRM","Salesforce","Stakeholder Management","Change Management"],
              "description":"Lead the Salesforce CRM rollout across 500+ customer service agents in three contact centres, owning the client relationship with the Chief Customer Officer and IT leadership. Responsible for programme governance, change management strategy, and go-live readiness assessment across all sites."},
-            {"slot_id":"P09-S2","role":"Salesforce Consultant","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P09-S2","role":"Salesforce Consultant","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Salesforce","CRM","Business Analysis","Agile"],
              "description":"Configure and customise Salesforce Sales Cloud and Service Cloud to meet the telco's customer service workflows, including case management, product catalogue integration, and omnichannel routing. Lead sprint ceremonies, manage the product backlog, and coordinate UAT with the client's IT and business teams."},
-            {"slot_id":"P09-S3","role":"Change & Training Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P09-S3","role":"Change & Training Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["Business Analysis","Research","PowerPoint","Stakeholder Management"],
              "description":"Design and deliver the training programme for the new Salesforce CRM system, including e-learning modules, quick reference guides, and train-the-trainer sessions for team leaders across three contact centres. Track adoption metrics post go-live and support the hypercare period to resolve usability issues and embed new workflows."},
         ]
@@ -415,16 +415,16 @@ PROJECTS = [
         "required_skills":["Data Governance","SQL","Compliance","Power BI"],
         "description":"Design and implement an enterprise data governance framework for DBS Bank, covering data ownership, classification, quality standards, and lineage across the Group's critical data elements. The engagement will establish a Data Governance Council, define stewardship roles across business domains, and deliver a data quality monitoring capability integrated with the bank's existing data platform. Outcomes will support DBS's regulatory reporting obligations and internal data democratisation strategy.",
         "team_slots":[
-            {"slot_id":"P10-S1","role":"Data Governance Lead","cl_range":[7,8],"cl_label":"CL7–8",
+            {"slot_id":"P10-S1","role":"Data Governance Lead","cl_range":[7,8],"cl_label":"CL7",
              "required_skills":["Data Governance","Strategy","Stakeholder Management","Compliance"],
              "description":"Design and implement the enterprise data governance framework for DBS Bank, establishing data ownership, classification standards, and quality thresholds across the Group's critical data elements. Chair the Data Governance Council, develop the governance policy suite, and present progress to the Group CTO and Board Data Committee."},
-            {"slot_id":"P10-S2","role":"Data Steward","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P10-S2","role":"Data Steward","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Data Governance","SQL","Compliance","Business Analysis"],
              "description":"Define data ownership, classification, and quality standards across business domains in partnership with domain data owners in Consumer Banking, Institutional Banking, and Group Technology. Work with domain owners to identify, prioritise, and remediate data quality issues affecting regulatory reporting and analytics use cases."},
-            {"slot_id":"P10-S3","role":"Data Steward","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P10-S3","role":"Data Steward","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["SQL","Power BI","Data Governance","Compliance"],
              "description":"Build the data quality monitoring dashboard and automate metadata lineage tracking across the bank's data platform, integrating with existing data engineering pipelines. Liaise with the data engineering team to implement automated data profiling and alert workflows for critical data elements."},
-            {"slot_id":"P10-S4","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P10-S4","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["SQL","Excel","Research","Business Analysis"],
              "description":"Support data quality assessments across critical data elements, maintaining the enterprise data dictionary and data asset register for the governance programme. Produce governance reporting packs for the Data Governance Council and senior stakeholders tracking quality metrics and remediation progress."},
         ]
@@ -445,7 +445,7 @@ PROJECTS = [
             {"slot_id":"P11-S2","role":"UX Lead","cl_range":[9,9],"cl_label":"CL9",
              "required_skills":["UX Design","Figma","User Research","Agile"],
              "description":"Lead end-to-end UX design for the mobile banking app, conducting user research across the target segment and producing wireframes, prototypes, and interaction specifications for the engineering team. Run iterative usability testing with customers throughout the design process to validate concepts before development investment."},
-            {"slot_id":"P11-S3","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P11-S3","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Business Analysis","Agile","Stakeholder Management","Research"],
              "description":"Define functional requirements for digital banking features including account management, payments, and investment onboarding, managing the product backlog and sprint planning in collaboration with product, design, and engineering teams. Coordinate dependency management between OCBC's in-house teams and the Accenture delivery workstream."},
             {"slot_id":"P11-S4","role":"Analyst","cl_range":[11,11],"cl_label":"CL11",
@@ -466,10 +466,10 @@ PROJECTS = [
             {"slot_id":"P12-S1","role":"ESG Strategy Lead","cl_range":[8,8],"cl_label":"CL8",
              "required_skills":["Strategy","Stakeholder Management","Financial Modelling","Research"],
              "description":"Design the ESG reporting framework for Mapletree Investments aligned to GRI Standards and TCFD recommendations, advising the CFO on ESG disclosure strategy for institutional investors and sustainability rating agencies. Lead stakeholder alignment across the investment, asset management, and finance teams to ensure data availability and reporting accuracy."},
-            {"slot_id":"P12-S2","role":"ESG Analyst","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P12-S2","role":"ESG Analyst","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Research","Data Visualisation","Excel","Business Analysis"],
              "description":"Collect and validate ESG data across Mapletree's real estate portfolio spanning Singapore, China, and Australia, building quantitative models to calculate carbon footprint and track progress against reduction targets. Conduct peer benchmarking against listed REIT sustainability disclosures to inform Mapletree's positioning with investors."},
-            {"slot_id":"P12-S3","role":"ESG Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P12-S3","role":"ESG Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["Research","Excel","PowerPoint","Business Analysis"],
              "description":"Prepare the annual ESG disclosure report and investor presentations, translating complex sustainability data into accessible narratives for institutional investor audiences. Benchmark Mapletree's sustainability performance against REIT peers on key ESG metrics including energy intensity, carbon emissions, and green building certifications."},
         ]
@@ -490,10 +490,10 @@ PROJECTS = [
             {"slot_id":"P13-S2","role":"NLP Engineer","cl_range":[9,9],"cl_label":"CL9",
              "required_skills":["NLP","Python","Machine Learning","Deep Learning"],
              "description":"Build and fine-tune conversational AI models for customer service use cases including billing enquiries, service fault reporting, and plan upgrades, using NLP techniques and large language model APIs. Own intent classification and entity extraction pipelines, and implement continuous improvement loops based on chatbot performance analytics."},
-            {"slot_id":"P13-S3","role":"AI Engineer","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P13-S3","role":"AI Engineer","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Python","NLP","AI Agents","Machine Learning"],
              "description":"Develop the knowledge base retrieval system using RAG architecture to ground chatbot responses in accurate product and policy information, and build the conversation analytics dashboard tracking resolution rates, escalation triggers, and customer satisfaction scores. Monitor chatbot performance in production and implement improvement cycles based on failed conversation analysis."},
-            {"slot_id":"P13-S4","role":"Change Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P13-S4","role":"Change Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["Business Analysis","Research","PowerPoint","Stakeholder Management"],
              "description":"Support the change management workstream for contact centre staff transitioning to AI-assisted service workflows, developing training materials and communication plans for 800+ agents across Singtel's Singapore contact centres. Track agent adoption metrics and satisfaction scores post go-live, escalating issues to the project team for resolution."},
         ]
@@ -508,13 +508,13 @@ PROJECTS = [
         "required_skills":["Python","Statistics","Machine Learning","Data Visualisation"],
         "description":"Build predictive models for patient admission demand, theatre utilisation, and length of stay across Parkway Pantai's six private hospital sites in Singapore. The project will deliver operational dashboards for ward managers and department heads, replacing manual Excel-based reporting with automated daily KPI feeds. Insights will support the hospital group's capacity planning decisions and support negotiations with insurance panel providers.",
         "team_slots":[
-            {"slot_id":"P14-S1","role":"Analytics Lead","cl_range":[8,9],"cl_label":"CL8–9",
+            {"slot_id":"P14-S1","role":"Analytics Lead","cl_range":[8,9],"cl_label":"CL8",
              "required_skills":["Strategy","Data Visualisation","Stakeholder Management","Machine Learning"],
              "description":"Lead the hospital operations analytics programme, presenting insights on bed utilisation, theatre efficiency, and patient flow to Parkway Pantai's COO and clinical directors across six hospital sites. Responsible for stakeholder management, analytical roadmap prioritisation, and translating data outputs into operational recommendations for hospital leadership."},
-            {"slot_id":"P14-S2","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P14-S2","role":"Data Scientist","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["Python","Statistics","Machine Learning","SQL"],
              "description":"Build predictive models for patient admission demand and length of stay using historical clinical and operational data, working with the clinical informatics team on data access, governance, and model validation. Develop model outputs into decision-support tools that ward managers can use for daily capacity planning."},
-            {"slot_id":"P14-S3","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P14-S3","role":"Data Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["SQL","Tableau","Data Visualisation","Excel"],
              "description":"Build operational dashboards for ward managers and department heads across six hospital sites, automating daily KPI reporting on bed occupancy, theatre utilisation, and patient throughput. Replace manual Excel-based reporting processes and ensure dashboards integrate with the hospital's existing data warehouse and EMR system."},
         ]
@@ -529,16 +529,16 @@ PROJECTS = [
         "required_skills":["ERP","SAP","Business Analysis","Change Management"],
         "description":"Lead the SAP S/4HANA implementation across ST Engineering's aerospace and marine divisions, covering Finance, Controlling, Procurement, and Manufacturing modules for approximately 3,000 end users across Singapore and regional offices. The project will replace a heavily customised legacy ERP system and harmonise financial reporting across business units to support ST Engineering's listed company obligations. A robust change management and training programme is critical given the scale of the user base.",
         "team_slots":[
-            {"slot_id":"P15-S1","role":"ERP Programme Lead","cl_range":[7,8],"cl_label":"CL7–8",
+            {"slot_id":"P15-S1","role":"ERP Programme Lead","cl_range":[7,8],"cl_label":"CL7",
              "required_skills":["ERP","SAP","Strategy","Stakeholder Management"],
              "description":"Lead the SAP S/4HANA implementation across ST Engineering's aerospace and marine divisions, managing the programme board and executive steering committee attended by business unit presidents. Responsible for programme strategy, budget management, vendor oversight, and executive stakeholder communications throughout the 24-month implementation."},
-            {"slot_id":"P15-S2","role":"SAP Functional Lead","cl_range":[8,9],"cl_label":"CL8–9",
+            {"slot_id":"P15-S2","role":"SAP Functional Lead","cl_range":[8,9],"cl_label":"CL8",
              "required_skills":["SAP","ERP","Business Analysis","Change Management"],
              "description":"Own SAP Finance and Controlling module configuration for ST Engineering, leading fit-gap workshops with finance and operations teams across three business units to align the template design with business requirements. Manage the configuration build team and oversee integration testing with adjacent modules including Procurement and Manufacturing."},
-            {"slot_id":"P15-S3","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9–10",
+            {"slot_id":"P15-S3","role":"Business Analyst","cl_range":[9,10],"cl_label":"CL9",
              "required_skills":["ERP","Business Analysis","Agile","Stakeholder Management"],
              "description":"Document business process requirements for SAP Manufacturing and Procurement modules across ST Engineering's aerospace and marine divisions, facilitating workshops with 50+ process owners across Singapore and regional sites. Support UAT planning, defect triage, and sign-off with the client IT team ahead of go-live."},
-            {"slot_id":"P15-S4","role":"Change & Training Analyst","cl_range":[10,11],"cl_label":"CL10–11",
+            {"slot_id":"P15-S4","role":"Change & Training Analyst","cl_range":[10,11],"cl_label":"CL10",
              "required_skills":["Business Analysis","PowerPoint","Research","Excel"],
              "description":"Develop end-user training materials for SAP Finance, Procurement, and Manufacturing modules, covering 3,000+ end users across Singapore and ST Engineering's regional offices in the US, Europe, and Southeast Asia. Coordinate training logistics including scheduling, venue management, and train-the-trainer sessions for local super-users in each site."},
         ]
@@ -546,6 +546,12 @@ PROJECTS = [
 ]
 
 # ── Generate flat ROLES list ──────────────────────────────────────────────────
+def make_cl_label(cl_range):
+    lo, hi = cl_range
+    if lo == hi:
+        return f"CL{lo}"
+    return f"CL{lo}\u2013{hi}"
+
 ROLES = []
 for p in PROJECTS:
     for slot in p["team_slots"]:
@@ -553,7 +559,7 @@ for p in PROJECTS:
             "role_id": slot["slot_id"],
             "role_title": slot["role"],
             "cl_range": slot["cl_range"],
-            "cl_label": slot["cl_label"],
+            "cl_label": make_cl_label(slot["cl_range"]),
             "required_skills": slot["required_skills"],
             "description": slot["description"],
             "project_id": p["id"],

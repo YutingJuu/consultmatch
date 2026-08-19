@@ -600,7 +600,6 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
         <div className="candidate-name-row">
           <strong>{c.name}</strong>
           <span className="tag cl-tag">CL{c.cl}</span>
-          <span className="tag">{c.cl_title}</span>
           {c.has_applied && <span className="signal-badge applied">✅ Applied</span>}
           {!c.has_applied && c.has_liked && <span className="signal-badge liked">❤️ Saved role</span>}
           {alreadyExpressed && <span className="signal-badge approached">✉️ Email Sent</span>}
