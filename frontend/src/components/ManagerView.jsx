@@ -366,14 +366,15 @@ export default function ManagerView({ projectId, customProject }) {
                                     📬 Applied ({applied.length})
                                   </div>
                                   {applied.map((c, idx) => (
-                                    <CandidateCard key={c.id} c={c} idx={globalIdx}
+                                    <CandidateCard key={c.id} c={c} idx={idx}
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
                                       onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
                                       onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
-                                  );})}
+                                  ))}
+
                                 </>
                               )}
                               {goodMatch.length > 0 && (
@@ -382,14 +383,15 @@ export default function ManagerView({ projectId, customProject }) {
                                     🤖 Good Match — score ≥ {THRESHOLD} ({goodMatch.length})
                                   </div>
                                   {goodMatch.map((c, idx) => (
-                                    <CandidateCard key={c.id} c={c} idx={globalIdx}
+                                    <CandidateCard key={c.id} c={c} idx={applied.length + goodMatch.length + idx}
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
                                       onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
                                       onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
-                                  );})}
+                                  ))}
+
                                 </>
                               )}
                               {goodMatch.length === 0 && applied.length === 0 && (
