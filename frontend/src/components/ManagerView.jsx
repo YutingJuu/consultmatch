@@ -403,15 +403,16 @@ export default function ManagerView({ projectId, customProject }) {
                                       ? `▲ Hide ${belowThreshold.length} lower-match candidates`
                                       : `▼ Show ${belowThreshold.length} more candidates (score < ${THRESHOLD})`}
                                   </button>
-                                  {showBelow && belowThreshold.map((c, idx) => { const globalIdx = applied.length + goodMatch.length + idx; return (
-                                    <CandidateCard key={c.id} c={c} idx={globalIdx}
+                                  {showBelow && belowThreshold.map((c, idx) => (
+                                    <CandidateCard key={c.id} c={c}
+                                      idx={applied.length + goodMatch.length + idx}
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
                                       onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
                                       onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
-                                  );})}
+                                  ))}
                                 </>
                               )}
                             </>
