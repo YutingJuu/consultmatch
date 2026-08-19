@@ -450,58 +450,15 @@ export default function ManagerView({ projectId, customProject }) {
                 ? <p className="empty-msg" style={{padding:"12px 16px"}}>
                     No candidates available for this slot.
                   </p>
-                : proposed.map((c, idx) => c && (() => {
-                    const expKey = getRoleId(role) + ":" + c.id;
-                    const alreadyContacted = expressedInterest?.has(expKey);
-                    return (
-                      <div key={c.id} className="proposed-card">
-                        <div className="proposed-rank">#{idx+1}</div>
-                        <div className="proposed-info">
-                          <div className="proposed-name-row">
-                            <strong>{c.name}</strong>
-                            <span className="tag cl-tag">CL{c.cl}</span>
-                            <span className="tag">{c.cl_title}</span>
-                            {c.has_applied && <span className="signal-badge applied">✅ Applied</span>}
-                            {!c.has_applied && c.has_liked && <span className="signal-badge liked">❤️ Interested</span>}
-                            {alreadyContacted && <span className="signal-badge approached">✉️ Email Sent</span>}
-                          </div>
-                          <div className="candidate-email">📧 {c.email || (c.name.toLowerCase().replace(" ", ".") + "@accenture.com")}</div>
-                          <div className="skills-row" style={{marginTop:"6px"}}>
-                            {c.skills?.map(s => (
-                              <span key={s} className={`skill-chip ${
-                                role.required_skills?.includes(s) ? "matched" : ""}`}>
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                          {c.score && (
-                            <div className="score-breakdown" style={{marginTop:"6px"}}>
-                              <span>Skills {c.score.breakdown.skills}/40</span>
-                              <span>Prefs {c.score.breakdown.preference}/40</span>
-                              <span>Avail {c.score.breakdown.availability}/20</span>
-                            </div>
-                          )}
-                        </div>
-                        <div style={{display:"flex",flexDirection:"column",gap:"6px",alignItems:"flex-end"}}>
-                          {c.score && <ScoreBadge score={c.score.total} small />}
-                          {c.has_applied && (
-                            <button className="view-cv-btn"
-                              onClick={() => setViewingCV({...c, roleId: getRoleId(role)})}>
-                              View CV
-                            </button>
-                          )}
-                          {!alreadyContacted
-                            ? <button className="express-btn" onClick={() => expressInterest(c, role)}>
-                                ✉️ Contact
-                              </button>
-                            : <span style={{fontSize:"12px",color:"#d97706",fontWeight:"600"}}>
-                                ✉️ Email Sent
-                              </span>
-                          }
-                        </div>
-                      </div>
-                    );
-                  })())
+                : proposed.map((c, idx) => c && (
+                    <CandidateCard key={c.id} c={c} idx={idx}
+                      requiredSkills={role.required_skills}
+                      expressedKey={getRoleId(role) + ":" + c.id}
+                      expressedInterest={expressedInterest}
+                      onViewCV={() => setViewingCV({...c, roleId: getRoleId(role)})}
+                      onExpressInterest={() => expressInterest(c, role)}
+                      onUpdateStatus={(status) => updateStatus(c.id, getRoleId(role), status)} />
+                  ))
               }
             </div>
           ))}
@@ -527,7 +484,7 @@ export default function ManagerView({ projectId, customProject }) {
             <div className="modal-header">
               <div>
                 <h3>{viewingCV.name}'s CV</h3>
-                <p>CL{viewingCV.cl} {viewingCV.cl_title}
+                <p>CL{viewingCV.cl}
                   {viewingCV.application_status && ` · ${viewingCV.application_status}`}
                 </p>
               </div>
