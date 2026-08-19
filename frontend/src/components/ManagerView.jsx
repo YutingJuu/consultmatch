@@ -580,10 +580,9 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
           {c.has_applied && (
             <button className="view-cv-btn" onClick={onViewCV}>View CV</button>
           )}
-          {!alreadyExpressed
-            ? <button className="express-btn" onClick={onExpressInterest}>✉️ Contact</button>
-            : <span className="signal-badge approached">✉️ Email Sent</span>
-          }
+          {!alreadyExpressed && (
+            <button className="express-btn" onClick={onExpressInterest}>✉️ Contact</button>
+          )}
         </div>
       </div>
       <div className="candidate-score-col">
