@@ -366,7 +366,7 @@ export default function ManagerView({ projectId, customProject }) {
                                     📬 Applied ({applied.length})
                                   </div>
                                   {applied.map((c, idx) => (
-                                    <CandidateCard key={c.id} c={c} idx={idx}
+                                    <CandidateCard key={c.id} c={c} idx={idx}  /* idx 0-based, shows as #1 */
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
@@ -383,7 +383,7 @@ export default function ManagerView({ projectId, customProject }) {
                                     🤖 Good Match — score ≥ {THRESHOLD} ({goodMatch.length})
                                   </div>
                                   {goodMatch.map((c, idx) => (
-                                    <CandidateCard key={c.id} c={c} idx={applied.length + goodMatch.length + idx}
+                                    <CandidateCard key={c.id} c={c} idx={applied.length + idx}
                                       requiredSkills={role.required_skills}
                                       expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}

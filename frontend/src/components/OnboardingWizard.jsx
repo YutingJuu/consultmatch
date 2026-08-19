@@ -34,7 +34,7 @@ const LEVELS = [
 
 const STEPS = ["About You", "Your Skills", "Upload CV", "Your Preferences", "Review"];
 
-function CategorisedSkills({ selected, onChange }) {
+function CategorisedSkills({ selected, onChange, search = "" }) {
   const [openCats, setOpenCats] = React.useState(["AI / ML"]);
   const toggle = (cat) => setOpenCats(prev =>
     prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
@@ -45,8 +45,10 @@ function CategorisedSkills({ selected, onChange }) {
   return (
     <div className="skill-categories">
       {Object.entries(SKILL_CATEGORIES).map(([cat, skills]) => {
-        const selectedInCat = skills.filter(s => selected.includes(s)).length;
-        const isOpen = openCats.includes(cat);
+        const filtered = search ? skills.filter(s => s.toLowerCase().includes(search.toLowerCase())) : skills;
+        if (filtered.length === 0) return null;
+        const selectedInCat = filtered.filter(s => selected.includes(s)).length;
+        const isOpen = openCats.includes(cat) || search.length > 0;
         return (
           <div key={cat} className="skill-category">
             <button className="skill-cat-header" onClick={() => toggle(cat)}>
@@ -58,7 +60,7 @@ function CategorisedSkills({ selected, onChange }) {
             </button>
             {isOpen && (
               <div className="skill-cat-grid">
-                {skills.map(s => (
+                {filtered.map(s => (
                   <button key={s}
                     className={`skill-toggle ${selected.includes(s) ? "active" : ""}`}
                     onClick={() => toggleSkill(s)}>
@@ -218,38 +220,17 @@ export default function OnboardingWizard({ onComplete, onBack }) {
           {step === 1 && (
             <div className="wizard-step-content">
               <h2>Select your skills</h2>
-              <p className="step-hint">
-                Pick all that apply. Selected: <strong>{form.skills.length}</strong>
-              </p>
-
-              <input
-                className="skill-search"
-                placeholder="Search skills..."
+              <p className="step-hint">Pick all that apply. Selected: <strong>{form.skills.length}</strong></p>
+              <input className="skill-search" placeholder="Search skills..."
                 value={skillSearch}
                 onChange={e => setSkillSearch(e.target.value)}
+                style={{width:"100%",marginBottom:"10px",padding:"8px 10px",
+                  border:"1.5px solid #e2e8f0",borderRadius:"8px",fontSize:"13px"}} />
+              <CategorisedSkills
+                selected={form.skills}
+                onChange={skills => update("skills", skills)}
+                search={skillSearch}
               />
-
-              {form.skills.length > 0 && (
-                <div className="selected-skills">
-                  {form.skills.map(s => (
-                    <span key={s} className="skill-chip selected" onClick={() => toggleSkill(s)}>
-                      {s} ✕
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="skill-grid">
-                {filteredSkills.map(s => (
-                  <button
-                    key={s}
-                    className={`skill-toggle ${form.skills.includes(s) ? "active" : ""}`}
-                    onClick={() => toggleSkill(s)}
-                  >
-                    {form.skills.includes(s) ? "✓ " : ""}{s}
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 
