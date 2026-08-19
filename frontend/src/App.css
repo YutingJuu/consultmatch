@@ -129,8 +129,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 .score-num { font-size: 22px; font-weight: 800; line-height: 1; }
 .score-label { font-size: 10px; font-weight: 700; letter-spacing: .5px; }
 .score-badge-small {
-  display: inline-block; color: white; font-size: 12px; font-weight: 700;
-  padding: 3px 9px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 50%;
+  color: white; font-size: 13px; font-weight: 700; flex-shrink: 0;
 }
 
 /* ── Rank Panel ────────────────────────────────────────────── */

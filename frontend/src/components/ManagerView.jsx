@@ -578,7 +578,7 @@ function CandidateCard({ c, idx, requiredSkills, expressedKey, expressedInterest
         )}
       </div>
       <div className="candidate-actions">
-        {c.score && <ScoreBadge score={c.score.total} small />}
+        {c.score && <ScoreBadge score={c.score.total} />}
         {c.has_applied && (
           <button className="view-cv-btn" onClick={onViewCV}>View CV</button>
         )}
