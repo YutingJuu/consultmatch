@@ -16,6 +16,7 @@ export default function ManagerView({ projectId, customProject }) {
   const [tab, setTab] = useState("slots");
   const [viewingCV, setViewingCV] = useState(null);
   const [expandedRole, setExpandedRole] = useState(null);
+  const [showBelowThreshold, setShowBelowThreshold] = useState({}); // role_id -> bool
   const [error, setError] = useState(null);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [expressedInterest, setExpressedInterest] = useState(new Set());
@@ -350,8 +351,13 @@ export default function ManagerView({ projectId, customProject }) {
                     {candidates.length === 0
                       ? <p className="empty-msg">No eligible candidates found for this CL range.</p>
                       : (() => {
+                          const THRESHOLD = 60;
                           const applied = candidates.filter(c => c.has_applied);
-                          const recommended = candidates.filter(c => !c.has_applied).slice(0, 6);
+                          const notApplied = candidates.filter(c => !c.has_applied);
+                          const goodMatch = notApplied.filter(c => (c.score?.total || 0) >= THRESHOLD);
+                          const belowThreshold = notApplied.filter(c => (c.score?.total || 0) < THRESHOLD);
+                          const roleKey = getRoleId(role);
+                          const showBelow = showBelowThreshold[roleKey];
                           return (
                             <>
                               {applied.length > 0 && (
@@ -362,27 +368,49 @@ export default function ManagerView({ projectId, customProject }) {
                                   {applied.map((c, idx) => (
                                     <CandidateCard key={c.id} c={c} idx={idx}
                                       requiredSkills={role.required_skills}
-                                      expressedKey={getRoleId(role) + ":" + c.id}
+                                      expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
-                                      onViewCV={() => setViewingCV({...c, roleId: getRoleId(role)})}
+                                      onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
-                                      onUpdateStatus={(status) => updateStatus(c.id, getRoleId(role), status)} />
+                                      onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
                                   ))}
                                 </>
                               )}
-                              {recommended.length > 0 && (
+                              {goodMatch.length > 0 && (
                                 <>
                                   <div className="candidate-section-header">
-                                    🤖 Recommended ({recommended.length})
+                                    🤖 Good Match — score ≥ {THRESHOLD} ({goodMatch.length})
                                   </div>
-                                  {recommended.map((c, idx) => (
+                                  {goodMatch.map((c, idx) => (
                                     <CandidateCard key={c.id} c={c} idx={idx}
                                       requiredSkills={role.required_skills}
-                                      expressedKey={getRoleId(role) + ":" + c.id}
+                                      expressedKey={roleKey + ":" + c.id}
                                       expressedInterest={expressedInterest}
-                                      onViewCV={() => setViewingCV({...c, roleId: getRoleId(role)})}
+                                      onViewCV={() => setViewingCV({...c, roleId: roleKey})}
                                       onExpressInterest={() => expressInterest(c, role)}
-                                      onUpdateStatus={(status) => updateStatus(c.id, getRoleId(role), status)} />
+                                      onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
+                                  ))}
+                                </>
+                              )}
+                              {goodMatch.length === 0 && applied.length === 0 && (
+                                <p className="empty-msg">No candidates above score threshold for this role.</p>
+                              )}
+                              {belowThreshold.length > 0 && (
+                                <>
+                                  <button className="show-more-btn"
+                                    onClick={() => setShowBelowThreshold(prev => ({...prev, [roleKey]: !showBelow}))}>
+                                    {showBelow
+                                      ? `▲ Hide ${belowThreshold.length} lower-match candidates`
+                                      : `▼ Show ${belowThreshold.length} more candidates (score < ${THRESHOLD})`}
+                                  </button>
+                                  {showBelow && belowThreshold.map((c, idx) => (
+                                    <CandidateCard key={c.id} c={c} idx={idx}
+                                      requiredSkills={role.required_skills}
+                                      expressedKey={roleKey + ":" + c.id}
+                                      expressedInterest={expressedInterest}
+                                      onViewCV={() => setViewingCV({...c, roleId: roleKey})}
+                                      onExpressInterest={() => expressInterest(c, role)}
+                                      onUpdateStatus={(status) => updateStatus(c.id, roleKey, status)} />
                                   ))}
                                 </>
                               )}
