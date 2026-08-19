@@ -1092,3 +1092,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .skill-cat-arrow { font-size: 10px; color: #94a3b8; }
 .skill-cat-grid { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; }
+
+/* ── Candidate card footer (action buttons) ────────────────── */
+.candidate-footer {
+  display: flex; gap: 8px; align-items: center; margin-top: 10px;
+  padding-top: 10px; border-top: 0.5px solid #e2e8f0;
+}
+.candidate-score-col {
+  display: flex; flex-direction: column; align-items: flex-end;
+  justify-content: flex-start; flex-shrink: 0; padding-top: 2px;
+}
